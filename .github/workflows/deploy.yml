@@ -1,0 +1,85 @@
+name: Deploy डुकृङ्करणे to GitHub Pages
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  # Build job (even though it's static, we can add validation)
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Validate HTML
+        run: |
+          # Basic HTML validation
+          if ! grep -q "<!DOCTYPE html>" index.html; then
+            echo "Error: Missing DOCTYPE in index.html"
+            exit 1
+          fi
+          echo "✅ HTML structure looks good"
+          
+      - name: Check required files
+        run: |
+          required_files=("index.html" "styles.css" "simple-github-edit.js" "content-loader.js")
+          for file in "${required_files[@]}"; do
+            if [ ! -f "$file" ]; then
+              echo "❌ Missing required file: $file"
+              exit 1
+            else
+              echo "✅ Found: $file"
+            fi
+          done
+          
+      - name: Validate content structure
+        run: |
+          if [ ! -d "content" ]; then
+            echo "❌ Missing content directory"
+            exit 1
+          fi
+          
+          content_files=$(find content -name "*.md" | wc -l)
+          if [ "$content_files" -lt 5 ]; then
+            echo "⚠️  Warning: Only $content_files content files found"
+          else
+            echo "✅ Found $content_files content files"
+          fi
+          
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+        
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: '.'
+
+  # Deployment job
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+        
+      - name: Notify deployment success
+        run: |
+          echo "🎉 डुकृङ्करणे deployed successfully!"
+          echo "📍 URL: ${{ steps.deployment.outputs.page_url }}"
+          echo "🔗 Custom domain: https://dukrnkarane.udapaana.in (once DNS configured)"
