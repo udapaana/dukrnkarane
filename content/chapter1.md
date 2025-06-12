@@ -62,9 +62,9 @@ The Vedic accent system uses three distinct tones:
 - Marked with vertical line in Devanagari: <skt>अ॑</skt>
 
 [example]
-**Traditional Recitation**: <skt>अ॑ग्निमी॒ळे पुरो॑हितम्</skt>
-**IAST**: agním īḷé puróhitam
-**Translation**: "I praise Agni, the priest..."
+**Traditional Recitation**: <skt>अ॒ग्निमी॑ळे पु॒रोहि॑तं</skt>
+**IAST**: agnímīḷé puróhitaṃ
+**Translation**: "The Flame I pray, the priest"
 [/example]
 
 ---
