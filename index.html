@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>डुकृण्करणे | Vedic Sanskrit Grammar</title>
+    <link rel="stylesheet" href="assets/css/styles.css" />
+    <script type="module" src="assets/js/script.js"></script>
+  </head>
+  <body>
+    <nav class="navigation">
+      <div class="nav-center">
+        <button id="prev-btn" class="nav-button" aria-label="Previous section">
+          ←
+        </button>
+        <span id="section-counter" class="section-counter"
+          >Section 1 of 972</span
+        >
+        <button id="next-btn" class="nav-button" aria-label="Next section">
+          →
+        </button>
+      </div>
+      <div class="nav-controls">
+        <button
+          id="help-button"
+          class="control-button"
+          aria-label="Markdown guide"
+          title="View markdown specification"
+        >
+          ?
+        </button>
+        <button
+          id="edit-button"
+          class="control-button"
+          aria-label="Suggest edit"
+          title="Suggest an edit to this section"
+        >
+          ✎
+        </button>
+        <div class="script-selector">
+          <button id="script-toggle" aria-label="Change script">
+            <span class="script-char iast" style="display: none">ka</span>
+            <span class="script-char devanagari">क</span>
+            <span class="script-char telugu" style="display: none">క</span>
+            <span class="script-char nandinagari" style="display: none">𑦮</span>
+          </button>
+          <div id="script-menu" class="script-menu">
+            <button class="script-option iast" data-script="iast">
+              ka - IAST
+            </button>
+            <button class="script-option devanagari" data-script="devanagari">
+              क - Devanagari
+            </button>
+            <button class="script-option telugu" data-script="telugu">
+              క - Telugu
+            </button>
+            <button class="script-option nandinagari" data-script="nandinagari">
+              𑦮 - Nandinagari
+            </button>
+          </div>
+        </div>
+        <button
+          id="theme-toggle"
+          class="control-button"
+          aria-label="Toggle theme"
+        >
+          ◐
+        </button>
+      </div>
+    </nav>
+
+    <main class="content-container">
+      <article id="content" class="content">
+        <div class="loading">Loading...</div>
+      </article>
+    </main>
+
+    <!-- Help Modal -->
+    <div id="help-modal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Markdown Specification</h2>
+          <button id="close-help-modal" class="close-button">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div id="help-content" class="help-content">
+            <div class="loading">Loading...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div id="edit-modal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Suggest an Edit</h2>
+          <button id="close-modal" class="close-button">&times;</button>
+        </div>
+        <div class="modal-body">
+          <p class="modal-instructions">
+            Edit the markdown below. Your changes will be used to create a
+            GitHub issue suggesting improvements to this section.
+          </p>
+          <textarea
+            id="edit-textarea"
+            class="edit-textarea"
+            spellcheck="false"
+          ></textarea>
+          <div class="modal-actions">
+            <button id="preview-changes" class="secondary-button">
+              Preview Changes
+            </button>
+            <button id="create-issue" class="primary-button">
+              Create GitHub Issue
+            </button>
+          </div>
+          <div
+            id="preview-container"
+            class="preview-container"
+            style="display: none"
+          >
+            <h3>Preview</h3>
+            <div id="preview-content" class="preview-content"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

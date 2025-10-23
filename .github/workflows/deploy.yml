@@ -1,10 +1,11 @@
-name: Deploy डुकृङ्करणे to GitHub Pages
+name: Deploy डुकृण्करणे to dukrnkarane.udapaana.in
 
 on:
   push:
-    branches: [ main ]
+    branches: [main, master]
   pull_request:
-    branches: [ main ]
+    branches: [main, master]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -16,25 +17,42 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  # Build job (even though it's static, we can add validation)
+  # Build and validation job
   build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        
-      - name: Validate HTML
+
+      - name: Validate HTML structure
         run: |
-          # Basic HTML validation
+          echo "🔍 Validating HTML..."
           if ! grep -q "<!DOCTYPE html>" index.html; then
-            echo "Error: Missing DOCTYPE in index.html"
+            echo "❌ Error: Missing DOCTYPE in index.html"
+            exit 1
+          fi
+          if ! grep -q "assets/css/styles.css" index.html; then
+            echo "❌ Error: CSS reference not updated to assets/css/styles.css"
+            exit 1
+          fi
+          if ! grep -q "assets/js/script.js" index.html; then
+            echo "❌ Error: JS reference not updated to assets/js/script.js"
             exit 1
           fi
           echo "✅ HTML structure looks good"
-          
+
       - name: Check required files
         run: |
-          required_files=("index.html" "styles.css" "simple-github-edit.js" "content-loader.js")
+          echo "🔍 Checking required files..."
+          required_files=(
+            "index.html"
+            "assets/css/styles.css"
+            "assets/js/script.js"
+            "assets/wasm/shlesha.js"
+            "assets/wasm/shlesha_bg.wasm"
+            "README.md"
+          )
+
           for file in "${required_files[@]}"; do
             if [ ! -f "$file" ]; then
               echo "❌ Missing required file: $file"
@@ -43,28 +61,103 @@ jobs:
               echo "✅ Found: $file"
             fi
           done
-          
+
       - name: Validate content structure
         run: |
+          echo "🔍 Validating content structure..."
+
+          # Check content directory
           if [ ! -d "content" ]; then
             echo "❌ Missing content directory"
             exit 1
           fi
-          
-          content_files=$(find content -name "*.md" | wc -l)
-          if [ "$content_files" -lt 5 ]; then
-            echo "⚠️  Warning: Only $content_files content files found"
-          else
-            echo "✅ Found $content_files content files"
+
+          # Check markdown spec
+          if [ ! -f "content/markdown-spec.md" ]; then
+            echo "❌ Missing markdown specification"
+            exit 1
           fi
-          
+
+          # Check data/sections
+          if [ ! -d "data/sections" ]; then
+            echo "❌ Missing data/sections directory"
+            exit 1
+          fi
+
+          section_files=$(find data/sections -name "*.md" | wc -l)
+          echo "📄 Found $section_files section files"
+
+          if [ "$section_files" -lt 900 ]; then
+            echo "⚠️  Warning: Expected ~972 sections, found only $section_files"
+          else
+            echo "✅ Section count looks good ($section_files files)"
+          fi
+
+      - name: Validate assets structure
+        run: |
+          echo "🔍 Validating assets..."
+
+          # Check CSS
+          if ! grep -q "font-sanskrit-devanagari" assets/css/styles.css; then
+            echo "❌ Missing Devanagari font variables in CSS"
+            exit 1
+          fi
+
+          # Check JS has correct paths
+          if ! grep -q 'from "../wasm/shlesha.js"' assets/js/script.js; then
+            echo "❌ Incorrect Shlesha import path in script.js"
+            exit 1
+          fi
+
+          if ! grep -q 'CONTENT_BASE_URL = "data/sections"' assets/js/script.js; then
+            echo "❌ Content base URL not set to local path"
+            exit 1
+          fi
+
+          echo "✅ Assets structure validated"
+
+      - name: Check WASM files
+        run: |
+          echo "🔍 Checking WASM files..."
+
+          wasm_size=$(wc -c < assets/wasm/shlesha_bg.wasm)
+          js_size=$(wc -c < assets/wasm/shlesha.js)
+
+          echo "📦 WASM binary: $wasm_size bytes"
+          echo "📦 JS wrapper: $js_size bytes"
+
+          if [ "$wasm_size" -lt 100000 ]; then
+            echo "⚠️  Warning: WASM file seems small ($wasm_size bytes)"
+          fi
+
+          echo "✅ WASM files present"
+
+      - name: Validate documentation
+        run: |
+          echo "🔍 Validating documentation..."
+
+          docs=(
+            "README.md"
+            "CHANGELOG.md"
+            "docs/MARKERS.md"
+            "docs/IMPLEMENTATION.md"
+          )
+
+          for doc in "${docs[@]}"; do
+            if [ ! -f "$doc" ]; then
+              echo "⚠️  Missing documentation: $doc"
+            else
+              echo "✅ Found: $doc"
+            fi
+          done
+
       - name: Setup Pages
         uses: actions/configure-pages@v4
-        
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: '.'
+          path: "."
 
   # Deployment job
   deploy:
@@ -77,9 +170,14 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
-        
+
       - name: Notify deployment success
         run: |
-          echo "🎉 डुकृङ्करणे deployed successfully!"
-          echo "📍 URL: ${{ steps.deployment.outputs.page_url }}"
-          echo "🔗 Custom domain: https://dukrnkarane.udapaana.in (once DNS configured)"
+          echo "🎉 डुकृण्करणे deployed successfully!"
+          echo "📍 GitHub Pages URL: ${{ steps.deployment.outputs.page_url }}"
+          echo "🌐 Custom domain: https://dukrnkarane.udapaana.in"
+          echo ""
+          echo "✅ Deployment complete!"
+          echo "🔤 Multi-script support: IAST, Devanagari, Telugu, Nandinagari"
+          echo "📚 972 sections available"
+          echo "✏️  Edit suggestions enabled"
