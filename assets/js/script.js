@@ -599,34 +599,38 @@ function createGitHubIssue() {
 
   const paddedNum = String(currentSection).padStart(3, "0");
   const fileName = `${paddedNum}.md`;
-
-  // Copy content to clipboard first
-  copyToClipboard(editedMarkdown);
-
-  // Create a descriptive commit message
   const changes = computeChangeSummary(originalMarkdown, editedMarkdown);
-  const commitMessage = `Edit suggestion for §${currentSection}: ${changes.summary}`;
 
-  // GitHub's web-based editing flow
-  // This will prompt the user to:
-  // 1. Fork the repo (if they haven't already)
-  // 2. Edit the file in their fork
-  // 3. Create a PR with their changes
-  const editUrl = `https://github.com/udapaana/vyakarana/edit/main/final/${fileName}`;
+  // Create a formatted issue body with the complete edited content
+  const issueTitle = `Edit suggestion for §${currentSection}`;
+  const issueBody = `## Edit Suggestion for §${currentSection}
 
-  // Notify user with instructions
+**File:** \`final/${fileName}\`
+**Changes:** ${changes.summary}
+
+### Edited Content
+
+\`\`\`markdown
+${editedMarkdown}
+\`\`\`
+
+---
+*Submitted from: ${window.location.href}*`;
+
+  // Copy the entire formatted issue to clipboard
+  const fullIssueText = `${issueTitle}\n\n${issueBody}`;
+  copyToClipboard(fullIssueText);
+
+  // Simple alert with clear instructions
   alert(
-    `✅ Content copied to clipboard!\n\n` +
-      `Steps to create your edit suggestion:\n` +
-      `1. GitHub will open and prompt you to fork the repository\n` +
-      `2. Replace the file content with your edited version (paste from clipboard)\n` +
-      `3. Add commit message: "${commitMessage}"\n` +
-      `4. Click "Propose changes" to create a Pull Request\n\n` +
-      `The edited content is ready to paste!`,
+    "✅ Edit suggestion copied to clipboard!\n\n" +
+      "Click OK to open a new GitHub issue.\n" +
+      "Then just paste (Ctrl+V or Cmd+V) the content and submit.",
   );
 
-  // Open GitHub's edit page
-  window.open(editUrl, "_blank");
+  // Open new issue page (no URL parameters to avoid length issues)
+  const newIssueUrl = "https://github.com/udapaana/vyakarana/issues/new";
+  window.open(newIssueUrl, "_blank");
 
   // Close the modal
   closeEditModal();
