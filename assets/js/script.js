@@ -603,55 +603,37 @@ function createGitHubIssue() {
   // Create a diff summary
   const changes = computeChangeSummary(originalMarkdown, editedMarkdown);
 
-  // Create the issue body with a summary
-  const issueTitle = `Edit suggestion for section ${currentSection} (${fileName})`;
-  const issueBody = `## Edit Suggestion for Section ${currentSection}
+  // Create a much simpler issue body to avoid URL length limits
+  const issueTitle = `Edit suggestion for section ${currentSection}`;
+  const issueBody = `Edit suggestion for section ${currentSection} (file: \`final/${fileName}\`)
 
-**File:** \`final/${fileName}\`
-**Source:** ${window.location.href}
+**Changes:** ${changes.summary}
+**Size:** ${originalMarkdown.length} → ${editedMarkdown.length} chars
 
-### Summary of Changes
-${changes.summary}
+The edited content has been copied to the contributor's clipboard.
+Please ask them to paste it in a comment below.
 
-### Instructions for Reviewer
-
-The contributor has suggested edits to this section. To review:
-
-1. **Download the edited version:**
-   - The edited content will be copied to the contributor's clipboard
-   - They should paste it in a comment below
-
-2. **Review changes:**
-   - Compare with current \`final/${fileName}\`
-   - Verify Sanskrit transliteration markers are correct
-   - Check formatting and accuracy
-
-3. **Apply if approved:**
-   - Replace content in \`final/${fileName}\`
-
----
-
-### Statistics
-- Original: ${originalMarkdown.length} chars
-- Edited: ${editedMarkdown.length} chars
-- Change: ${editedMarkdown.length > originalMarkdown.length ? "+" : ""}${editedMarkdown.length - originalMarkdown.length} chars
-- Lines: ${changes.added > 0 ? "+" + changes.added : ""} ${changes.removed > 0 ? "-" + changes.removed : ""} ${changes.modified > 0 ? "~" + changes.modified : ""}
-
----
-*Edit suggestion via dukrnkarane.udapaana.com*`;
+Source: ${window.location.href}`;
 
   // Encode for GitHub URL
   const githubUrl = `https://github.com/udapaana/vyakarana/issues/new?title=${encodeURIComponent(issueTitle)}&body=${encodeURIComponent(issueBody)}`;
 
-  // Always copy content to clipboard for user to paste
+  // Copy content to clipboard first
   copyToClipboard(editedMarkdown);
 
-  // Open in new tab
-  window.open(githubUrl, "_blank");
+  // Check if URL might be too long (GitHub has limits around 8KB)
+  if (githubUrl.length > 8000) {
+    // Fallback: just open new issue page without body
+    const simpleUrl = `https://github.com/udapaana/vyakarana/issues/new?title=${encodeURIComponent(issueTitle)}`;
+    window.open(simpleUrl, "_blank");
+  } else {
+    // Open in new tab
+    window.open(githubUrl, "_blank");
+  }
 
   // Notify user
   alert(
-    "Edited content has been copied to your clipboard. Please paste it in a comment on the GitHub issue.",
+    "✅ Content copied to clipboard!\n\nA GitHub issue page will open. Please paste the content in a comment.",
   );
 
   // Close the modal
