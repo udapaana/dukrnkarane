@@ -599,37 +599,20 @@ function createGitHubIssue() {
 
   const paddedNum = String(currentSection).padStart(3, "0");
   const fileName = `${paddedNum}.md`;
-  const changes = computeChangeSummary(originalMarkdown, editedMarkdown);
 
-  // Create a formatted issue body with the complete edited content
-  const issueTitle = `Edit suggestion for §${currentSection}`;
-  const issueBody = `## Edit Suggestion for §${currentSection}
+  // Just copy the edited markdown to clipboard
+  copyToClipboard(editedMarkdown);
 
-**File:** \`final/${fileName}\`
-**Changes:** ${changes.summary}
-
-### Edited Content
-
-\`\`\`markdown
-${editedMarkdown}
-\`\`\`
-
----
-*Submitted from: ${window.location.href}*`;
-
-  // Copy the entire formatted issue to clipboard
-  const fullIssueText = `${issueTitle}\n\n${issueBody}`;
-  copyToClipboard(fullIssueText);
-
-  // Simple alert with clear instructions
+  // Simple alert
   alert(
-    "✅ Edit suggestion copied to clipboard!\n\n" +
-      "Click OK to open a new GitHub issue.\n" +
-      "Then just paste (Ctrl+V or Cmd+V) the content and submit.",
+    `✅ Edited content copied to clipboard!\n\n` +
+      `A new GitHub issue will open.\n` +
+      `Just paste (Ctrl+V or Cmd+V) your edit and submit.`,
   );
 
-  // Open new issue page (no URL parameters to avoid length issues)
-  const newIssueUrl = "https://github.com/udapaana/vyakarana/issues/new";
+  // Open new issue page with title pre-filled
+  const issueTitle = `Edit suggestion for §${currentSection} (${fileName})`;
+  const newIssueUrl = `https://github.com/udapaana/vyakarana/issues/new?title=${encodeURIComponent(issueTitle)}`;
   window.open(newIssueUrl, "_blank");
 
   // Close the modal
