@@ -600,41 +600,33 @@ function createGitHubIssue() {
   const paddedNum = String(currentSection).padStart(3, "0");
   const fileName = `${paddedNum}.md`;
 
-  // Create a diff summary
-  const changes = computeChangeSummary(originalMarkdown, editedMarkdown);
-
-  // Create a much simpler issue body to avoid URL length limits
-  const issueTitle = `Edit suggestion for section ${currentSection}`;
-  const issueBody = `Edit suggestion for section ${currentSection} (file: \`final/${fileName}\`)
-
-**Changes:** ${changes.summary}
-**Size:** ${originalMarkdown.length} → ${editedMarkdown.length} chars
-
-The edited content has been copied to the contributor's clipboard.
-Please ask them to paste it in a comment below.
-
-Source: ${window.location.href}`;
-
-  // Encode for GitHub URL
-  const githubUrl = `https://github.com/udapaana/vyakarana/issues/new?title=${encodeURIComponent(issueTitle)}&body=${encodeURIComponent(issueBody)}`;
-
   // Copy content to clipboard first
   copyToClipboard(editedMarkdown);
 
-  // Check if URL might be too long (GitHub has limits around 8KB)
-  if (githubUrl.length > 8000) {
-    // Fallback: just open new issue page without body
-    const simpleUrl = `https://github.com/udapaana/vyakarana/issues/new?title=${encodeURIComponent(issueTitle)}`;
-    window.open(simpleUrl, "_blank");
-  } else {
-    // Open in new tab
-    window.open(githubUrl, "_blank");
-  }
+  // Create a descriptive commit message
+  const changes = computeChangeSummary(originalMarkdown, editedMarkdown);
+  const commitMessage = `Edit suggestion for §${currentSection}: ${changes.summary}`;
 
-  // Notify user
+  // GitHub's web-based editing flow
+  // This will prompt the user to:
+  // 1. Fork the repo (if they haven't already)
+  // 2. Edit the file in their fork
+  // 3. Create a PR with their changes
+  const editUrl = `https://github.com/udapaana/vyakarana/edit/main/final/${fileName}`;
+
+  // Notify user with instructions
   alert(
-    "✅ Content copied to clipboard!\n\nA GitHub issue page will open. Please paste the content in a comment.",
+    `✅ Content copied to clipboard!\n\n` +
+      `Steps to create your edit suggestion:\n` +
+      `1. GitHub will open and prompt you to fork the repository\n` +
+      `2. Replace the file content with your edited version (paste from clipboard)\n` +
+      `3. Add commit message: "${commitMessage}"\n` +
+      `4. Click "Propose changes" to create a Pull Request\n\n` +
+      `The edited content is ready to paste!`,
   );
+
+  // Open GitHub's edit page
+  window.open(editUrl, "_blank");
 
   // Close the modal
   closeEditModal();
