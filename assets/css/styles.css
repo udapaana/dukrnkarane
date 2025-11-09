@@ -1047,3 +1047,95 @@ body[data-script="nandinagari"] .verse-line {
 [data-theme="dark"] .panini-ref:hover {
   background-color: rgba(52, 152, 219, 0.25);
 }
+
+/* Word Index */
+.index-search {
+  padding: var(--spacing-unit);
+  border-bottom: 1px solid var(--color-border);
+  background-color: var(--color-bg);
+}
+
+.index-search input {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  font-size: 1rem;
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  font-family: "Noto Serif Devanagari", serif;
+}
+
+.index-search input:focus {
+  outline: none;
+  border-color: var(--color-accent);
+}
+
+.search-stats {
+  margin-top: 0.5rem;
+  font-size: 0.9rem;
+  color: var(--color-secondary);
+}
+
+.word-list {
+  padding: 0;
+}
+
+.word-entry {
+  padding: 0.75rem var(--spacing-unit);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.word-entry:hover {
+  background-color: rgba(52, 152, 219, 0.05);
+}
+
+.word-devanagari {
+  display: block;
+  font-size: 1.2rem;
+  font-weight: 600;
+  font-family: "Noto Serif Devanagari", serif;
+  color: var(--color-text);
+  margin-bottom: 0.25rem;
+}
+
+.word-refs {
+  font-size: 0.9rem;
+  color: var(--color-secondary);
+}
+
+.word-refs .section-ref {
+  color: var(--color-accent);
+  text-decoration: none;
+  font-weight: 500;
+  padding: 0.1rem 0.3rem;
+  border-radius: 3px;
+  transition: all var(--transition-speed);
+}
+
+.word-refs .section-ref:hover {
+  background-color: rgba(52, 152, 219, 0.1);
+  text-decoration: underline;
+}
+
+.word-refs .more {
+  font-style: italic;
+  color: var(--color-secondary);
+  font-size: 0.85em;
+}
+
+.no-results,
+.more-results {
+  padding: var(--spacing-unit);
+  text-align: center;
+  color: var(--color-secondary);
+  font-style: italic;
+}
+
+[data-theme="dark"] .word-entry:hover {
+  background-color: rgba(52, 152, 219, 0.1);
+}
+
+[data-theme="dark"] .word-refs .section-ref:hover {
+  background-color: rgba(52, 152, 219, 0.15);
+}

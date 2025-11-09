@@ -14,6 +14,7 @@ let currentScript = localStorage.getItem("sanskrit-script") || "devanagari";
 let transliterator = null;
 let chaptersData = null; // Will hold chapter metadata
 let currentChapter = null; // Current chapter being viewed
+let wordIndexData = null; // Word index for search
 
 // DOM Elements
 const contentElement = document.getElementById("content");
@@ -39,6 +40,12 @@ const tocButton = document.getElementById("toc-button");
 const tocSidebar = document.getElementById("toc-sidebar");
 const closeTocBtn = document.getElementById("close-toc");
 const tocContent = document.getElementById("toc-content");
+const indexButton = document.getElementById("index-button");
+const indexSidebar = document.getElementById("index-sidebar");
+const closeIndexBtn = document.getElementById("close-index");
+const indexContent = document.getElementById("index-content");
+const wordSearch = document.getElementById("word-search");
+const searchStats = document.getElementById("search-stats");
 const imageToggle = document.getElementById("image-toggle");
 const imageViewer = document.getElementById("image-viewer");
 const pageImage = document.getElementById("page-image");
@@ -976,6 +983,18 @@ tocSidebar?.addEventListener("click", (e) => {
   }
 });
 
+// Word Index event listeners
+indexButton?.addEventListener("click", openWordIndex);
+closeIndexBtn?.addEventListener("click", closeWordIndex);
+wordSearch?.addEventListener("input", handleWordSearch);
+
+// Close word index on backdrop click
+indexSidebar?.addEventListener("click", (e) => {
+  if (e.target === indexSidebar) {
+    closeWordIndex();
+  }
+});
+
 // Image viewer event listener
 imageToggle?.addEventListener("click", toggleImage);
 
@@ -1008,6 +1027,8 @@ document.addEventListener("keydown", (e) => {
   if (e.key === "Escape") {
     if (tocSidebar?.classList.contains("active")) {
       closeTOC();
+    } else if (indexSidebar?.classList.contains("active")) {
+      closeWordIndex();
     } else if (helpModal?.classList.contains("active")) {
       closeHelpModal();
     } else if (editModal?.classList.contains("active")) {
@@ -1075,6 +1096,103 @@ function closeTOC() {
   document.body.style.overflow = "auto";
 }
 
+// Word Index Functions
+async function loadWordIndex() {
+  try {
+    const response = await fetch("data/word-index.json");
+    if (!response.ok) throw new Error("Failed to load word index");
+    wordIndexData = await response.json();
+    console.log("Word index loaded:", wordIndexData.totalWords, "words");
+    displayWordIndex();
+  } catch (error) {
+    indexContent.innerHTML = `<p class="error">Failed to load word index: ${error.message}</p>`;
+  }
+}
+
+function displayWordIndex(filterText = "") {
+  if (!wordIndexData) {
+    indexContent.innerHTML = '<div class="loading">Loading...</div>';
+    return;
+  }
+
+  const words = Object.keys(wordIndexData.index);
+  let filteredWords = words;
+
+  if (filterText) {
+    filteredWords = words.filter((word) => word.includes(filterText));
+  }
+
+  if (filteredWords.length === 0) {
+    indexContent.innerHTML = '<p class="no-results">No words found</p>';
+    searchStats.textContent = "0 results";
+    return;
+  }
+
+  // Update stats
+  searchStats.textContent = `${filteredWords.length} of ${words.length} words`;
+
+  // Display words with their section references
+  let html = '<div class="word-list">';
+
+  for (const word of filteredWords.slice(0, 200)) {
+    // Limit to 200 for performance
+    const sections = wordIndexData.index[word];
+    const sectionLinks = sections
+      .slice(0, 5)
+      .map(
+        (s) => `<a href="#" class="section-ref" data-section="${s}">§${s}</a>`,
+      )
+      .join(", ");
+
+    const moreText =
+      sections.length > 5
+        ? ` <span class="more">+${sections.length - 5} more</span>`
+        : "";
+
+    html += `
+      <div class="word-entry">
+        <span class="word-devanagari">${word}</span>
+        <div class="word-refs">${sectionLinks}${moreText}</div>
+      </div>
+    `;
+  }
+
+  if (filteredWords.length > 200) {
+    html += `<p class="more-results">Showing first 200 of ${filteredWords.length} results</p>`;
+  }
+
+  html += "</div>";
+  indexContent.innerHTML = html;
+
+  // Add click handlers to section references
+  indexContent.querySelectorAll(".section-ref").forEach((link) => {
+    link.addEventListener("click", (e) => {
+      e.preventDefault();
+      const sectionNum = parseInt(link.getAttribute("data-section"));
+      displaySection(sectionNum);
+      closeWordIndex();
+    });
+  });
+}
+
+function handleWordSearch(e) {
+  const filterText = e.target.value.trim();
+  displayWordIndex(filterText);
+}
+
+function openWordIndex() {
+  indexSidebar.classList.add("active");
+  document.body.style.overflow = "hidden";
+  wordSearch.focus();
+}
+
+function closeWordIndex() {
+  indexSidebar.classList.remove("active");
+  document.body.style.overflow = "auto";
+  wordSearch.value = "";
+  displayWordIndex(); // Reset to full list
+}
+
 // Image Viewer Functions
 function updateImage(sectionNum) {
   // Get image path from frontmatter if available
@@ -1115,6 +1233,7 @@ function toggleImage() {
 async function main() {
   await initShlesha();
   await loadChapters();
+  await loadWordIndex();
   initTheme();
   initScript();
   currentSection = getSectionFromUrl();
