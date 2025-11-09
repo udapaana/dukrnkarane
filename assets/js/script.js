@@ -5,12 +5,15 @@ import init, { WasmShlesha } from "../wasm/shlesha.js";
 const TOTAL_SECTIONS = 986; // 955 main rules + 17 missing + 14 appendix sections
 const MIN_SECTION = 1; // Start at section 1 (no section 0)
 const CONTENT_BASE_URL = "data/sections";
+const CHAPTERS_URL = "data/chapters.json";
 
 // State
 let currentSection = 1; // Start at section 1
 let cachedContent = {};
 let currentScript = localStorage.getItem("sanskrit-script") || "devanagari";
 let transliterator = null;
+let chaptersData = null; // Will hold chapter metadata
+let currentChapter = null; // Current chapter being viewed
 
 // DOM Elements
 const contentElement = document.getElementById("content");
@@ -39,6 +42,34 @@ const tocContent = document.getElementById("toc-content");
 const imageToggle = document.getElementById("image-toggle");
 const imageViewer = document.getElementById("image-viewer");
 const pageImage = document.getElementById("page-image");
+
+// Load chapters metadata
+async function loadChapters() {
+  try {
+    const response = await fetch(CHAPTERS_URL);
+    if (!response.ok) throw new Error("Failed to load chapters");
+    const data = await response.json();
+    chaptersData = data.chapters;
+    console.log("Chapters loaded:", chaptersData.length);
+  } catch (error) {
+    console.error("Failed to load chapters:", error);
+    // Fallback: treat each section individually
+    chaptersData = null;
+  }
+}
+
+// Find which chapter a section belongs to
+function getChapterForSection(sectionNum) {
+  if (!chaptersData) return null;
+
+  for (const chapter of chaptersData) {
+    const [start, end] = chapter.range;
+    if (sectionNum >= start && sectionNum <= end) {
+      return chapter;
+    }
+  }
+  return null;
+}
 
 // Initialize Shlesha
 async function initShlesha() {
@@ -294,6 +325,51 @@ function parseFootnotes(markdown) {
   };
 }
 
+// Parse and link Paninian references
+function linkPaniniReferences(text) {
+  // Match patterns like:
+  // "II. 4, 62" or "I. 1, 1" or "VIII. 3, 59"
+  // Roman numeral . number , number
+  const paniniPattern = /\b([IVX]+)\.\s*(\d+),\s*(\d+)\b/g;
+
+  return text.replace(paniniPattern, (match, chapter, section, sutra) => {
+    // Convert Roman numerals to numbers
+    const chapterNum = romanToInt(chapter);
+
+    // Format as ashtadhyayi.com URL
+    // Format: https://ashtadhyayi.com/sutraani/{chapter}/{section}/{sutra}
+    const url = `https://ashtadhyayi.com/sutraani/${chapterNum}/${section}/${sutra}`;
+
+    return `<a href="${url}" class="panini-ref" target="_blank" rel="noopener" title="View in Ashtadhyayi.com">${match}</a>`;
+  });
+}
+
+// Convert Roman numerals to integers
+function romanToInt(s) {
+  const romanMap = {
+    I: 1,
+    V: 5,
+    X: 10,
+    L: 50,
+    C: 100,
+    D: 500,
+    M: 1000,
+  };
+
+  let result = 0;
+  for (let i = 0; i < s.length; i++) {
+    const current = romanMap[s[i]];
+    const next = romanMap[s[i + 1]];
+
+    if (next && current < next) {
+      result -= current;
+    } else {
+      result += current;
+    }
+  }
+  return result;
+}
+
 // Markdown parsing
 function parseMarkdown(markdown) {
   let html = markdown;
@@ -349,6 +425,9 @@ function parseMarkdown(markdown) {
   }
 
   let result = paragraphs.join("\n");
+
+  // Link Paninian references
+  result = linkPaniniReferences(result);
 
   // Append footnotes if any
   if (footnotesHtml) {
@@ -439,8 +518,105 @@ function parseTableLines(lines) {
 </table>`;
 }
 
-// Display section
+// Display chapter (multiple sections)
+async function displayChapter(chapter, scrollToSection = null) {
+  contentElement.innerHTML = '<div class="loading">Loading chapter...</div>';
+
+  try {
+    const [start, end] = chapter.range;
+    const sections = [];
+
+    // Chapter header
+    let chapterHtml = `
+      <div class="chapter-header">
+        <h1>Chapter ${chapter.number}: ${chapter.title}</h1>
+        <p class="chapter-range">§ ${start}–${end}</p>
+      </div>
+    `;
+
+    // Load all sections in the chapter
+    for (let i = start; i <= end; i++) {
+      try {
+        const markdown = await loadSection(i);
+        const { frontmatter, markdown: contentMarkdown } =
+          parseFrontmatter(markdown);
+
+        // Process and parse
+        const processedMarkdown = processSanskritMarkers(contentMarkdown);
+        const html = parseMarkdown(processedMarkdown);
+
+        // Wrap each section with an anchor
+        sections.push(`
+          <section id="s-${i}" class="grammar-section" data-section="${i}">
+            <div class="section-anchor">
+              <a href="#s-${i}" class="section-link">§ ${i}</a>
+            </div>
+            ${html}
+          </section>
+        `);
+      } catch (error) {
+        console.warn(`Section ${i} not found:`, error);
+        // Add placeholder for missing sections
+        sections.push(`
+          <section id="s-${i}" class="grammar-section missing" data-section="${i}">
+            <div class="section-anchor">
+              <a href="#s-${i}" class="section-link">§ ${i}</a>
+            </div>
+            <p class="missing-notice">Section ${i} not available</p>
+          </section>
+        `);
+      }
+    }
+
+    chapterHtml += sections.join("\n");
+    contentElement.innerHTML = chapterHtml;
+
+    // Transliterate the newly loaded content
+    transliterateContent();
+
+    currentChapter = chapter;
+    updateNavigation();
+
+    // Scroll to specific section if requested
+    if (scrollToSection) {
+      setTimeout(() => {
+        const element = document.getElementById(`s-${scrollToSection}`);
+        if (element) {
+          element.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      }, 100);
+    } else {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    const newUrl = `${window.location.pathname}?section=${scrollToSection || start}`;
+    window.history.pushState({ section: scrollToSection || start }, "", newUrl);
+  } catch (error) {
+    contentElement.innerHTML = `
+      <div class="loading">
+        <p>Error loading chapter</p>
+        <p>${error.message}</p>
+      </div>
+    `;
+  }
+}
+
+// Display section (now loads entire chapter)
 async function displaySection(sectionNum) {
+  const chapter = getChapterForSection(sectionNum);
+
+  if (chapter) {
+    // Load entire chapter with anchor to this section
+    await displayChapter(chapter, sectionNum);
+    currentSection = sectionNum;
+  } else {
+    // Fallback to single section mode
+    await displaySingleSection(sectionNum);
+  }
+}
+
+// Display single section (fallback)
+async function displaySingleSection(sectionNum) {
   contentElement.innerHTML = '<div class="loading">Loading...</div>';
 
   try {
@@ -454,11 +630,12 @@ async function displaySection(sectionNum) {
     const processedMarkdown = processSanskritMarkers(contentMarkdown);
     const html = parseMarkdown(processedMarkdown);
 
-    // Add frontmatter if present
-    let finalHtml = html;
-    if (frontmatter) {
-      finalHtml = `<div class="frontmatter">${frontmatter}</div>\n${html}`;
-    }
+    // Wrap with section anchor
+    let finalHtml = `
+      <section id="s-${sectionNum}" class="grammar-section" data-section="${sectionNum}">
+        ${html}
+      </section>
+    `;
 
     contentElement.innerHTML = finalHtml;
 
@@ -473,33 +650,55 @@ async function displaySection(sectionNum) {
     window.scrollTo({ top: 0, behavior: "smooth" });
   } catch (error) {
     contentElement.innerHTML = `
-            <div class="loading">
-                <p>Error loading section ${sectionNum}</p>
-                <p>${error.message}</p>
-            </div>
-        `;
+      <div class="loading">
+        <p>Error loading section ${sectionNum}</p>
+        <p>${error.message}</p>
+      </div>
+    `;
   }
 }
 
 // Update navigation
 function updateNavigation() {
-  prevButton.disabled = currentSection <= MIN_SECTION;
-  nextButton.disabled = currentSection >= TOTAL_SECTIONS;
+  // Determine if we can go to prev/next chapter
+  if (currentChapter) {
+    const currentChapterNum = currentChapter.number;
+    prevButton.disabled = currentChapterNum <= 1;
+    nextButton.disabled = currentChapterNum >= chaptersData.length;
 
-  // Display section number (§ symbol for rules)
-  const sectionLabel = `§ ${currentSection}`;
-  sectionCounter.textContent = `${sectionLabel} of ${TOTAL_SECTIONS}`;
+    const [start, end] = currentChapter.range;
+    sectionCounter.textContent = `Chapter ${currentChapterNum}: ${currentChapter.title} (§ ${start}–${end})`;
+  } else {
+    // Fallback to section-based navigation
+    prevButton.disabled = currentSection <= MIN_SECTION;
+    nextButton.disabled = currentSection >= TOTAL_SECTIONS;
+    sectionCounter.textContent = `§ ${currentSection} of ${TOTAL_SECTIONS}`;
+  }
 }
 
 // Navigation handlers
 function goToPrevious() {
-  if (currentSection > MIN_SECTION) {
+  if (currentChapter && chaptersData) {
+    // Go to previous chapter
+    const prevChapterNum = currentChapter.number - 1;
+    if (prevChapterNum >= 1) {
+      const prevChapter = chaptersData[prevChapterNum - 1];
+      displayChapter(prevChapter);
+    }
+  } else if (currentSection > MIN_SECTION) {
     displaySection(currentSection - 1);
   }
 }
 
 function goToNext() {
-  if (currentSection < TOTAL_SECTIONS) {
+  if (currentChapter && chaptersData) {
+    // Go to next chapter
+    const nextChapterNum = currentChapter.number + 1;
+    if (nextChapterNum <= chaptersData.length) {
+      const nextChapter = chaptersData[nextChapterNum - 1];
+      displayChapter(nextChapter);
+    }
+  } else if (currentSection < TOTAL_SECTIONS) {
     displaySection(currentSection + 1);
   }
 }
@@ -915,6 +1114,7 @@ function toggleImage() {
 // Initialize everything
 async function main() {
   await initShlesha();
+  await loadChapters();
   initTheme();
   initScript();
   currentSection = getSectionFromUrl();

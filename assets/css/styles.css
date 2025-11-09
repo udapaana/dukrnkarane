@@ -927,3 +927,123 @@ body[data-script="nandinagari"] .verse-line {
     max-width: 100%;
   }
 }
+
+/* Chapter Display */
+.chapter-header {
+  margin-bottom: calc(var(--spacing-unit) * 2);
+  padding-bottom: var(--spacing-unit);
+  border-bottom: 2px solid var(--color-accent);
+}
+
+.chapter-header h1 {
+  margin: 0 0 0.5rem 0;
+  color: var(--color-accent);
+  font-size: 2rem;
+}
+
+.chapter-range {
+  margin: 0;
+  color: var(--color-secondary);
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+/* Grammar Sections */
+.grammar-section {
+  margin-bottom: calc(var(--spacing-unit) * 3);
+  padding-bottom: calc(var(--spacing-unit) * 2);
+  border-bottom: 1px solid var(--color-border);
+  scroll-margin-top: 80px; /* Account for sticky nav */
+}
+
+.grammar-section:last-child {
+  border-bottom: none;
+}
+
+.grammar-section.missing {
+  opacity: 0.5;
+}
+
+.section-anchor {
+  position: sticky;
+  top: 70px;
+  margin-bottom: var(--spacing-unit);
+  padding: 0.5rem;
+  background-color: var(--color-bg);
+  border-left: 3px solid var(--color-accent);
+  z-index: 50;
+}
+
+.section-link {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--color-accent);
+  text-decoration: none;
+  font-family: monospace;
+}
+
+.section-link:hover {
+  text-decoration: underline;
+}
+
+.missing-notice {
+  padding: var(--spacing-unit);
+  background-color: var(--color-code-bg);
+  border-left: 4px solid var(--color-secondary);
+  color: var(--color-secondary);
+  font-style: italic;
+}
+
+/* Highlighted section (when linked directly) */
+.grammar-section:target {
+  animation: highlight-section 2s ease;
+}
+
+@keyframes highlight-section {
+  0% {
+    background-color: rgba(52, 152, 219, 0.1);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+[data-theme="dark"] .section-anchor {
+  background-color: var(--color-bg);
+}
+
+[data-theme="dark"] .missing-notice {
+  background-color: var(--color-code-bg);
+}
+
+/* Paninian Reference Links */
+.panini-ref {
+  color: var(--color-accent);
+  text-decoration: none;
+  font-weight: 600;
+  padding: 0.1rem 0.3rem;
+  background-color: rgba(52, 152, 219, 0.1);
+  border-radius: 3px;
+  font-family: monospace;
+  font-size: 0.95em;
+  transition: all var(--transition-speed);
+}
+
+.panini-ref:hover {
+  background-color: rgba(52, 152, 219, 0.2);
+  text-decoration: underline;
+}
+
+.panini-ref::after {
+  content: " ↗";
+  font-size: 0.8em;
+  opacity: 0.6;
+}
+
+[data-theme="dark"] .panini-ref {
+  background-color: rgba(52, 152, 219, 0.15);
+}
+
+[data-theme="dark"] .panini-ref:hover {
+  background-color: rgba(52, 152, 219, 0.25);
+}

@@ -1,0 +1,100 @@
+{
+  "chapters": [
+    {
+      "number": 1,
+      "title": "The Alphabet",
+      "range": [1, 34],
+      "topics": ["Letters", "vowels", "consonants", "classification", "pronunciation"]
+    },
+    {
+      "number": 2,
+      "title": "Euphonic Combination (Sandhi)",
+      "range": [35, 71],
+      "topics": ["Vowel sandhi", "consonant sandhi", "external/internal sandhi"]
+    },
+    {
+      "number": 3,
+      "title": "Declension of Nouns",
+      "range": [73, 178],
+      "topics": ["Nominal declensions", "stem types", "case endings"]
+    },
+    {
+      "number": 4,
+      "title": "Formation of Feminine Bases",
+      "range": [179, 195],
+      "topics": ["Feminine suffixes", "strī-bases", "formation rules"]
+    },
+    {
+      "number": 5,
+      "title": "Declension of Pronouns",
+      "range": [196, 221],
+      "topics": ["Personal pronouns", "demonstrative", "interrogative", "relative"]
+    },
+    {
+      "number": 6,
+      "title": "Numerals",
+      "range": [222, 241],
+      "topics": ["Cardinal", "ordinal", "multiplicative numbers"]
+    },
+    {
+      "number": 7,
+      "title": "Formation of Compound Words",
+      "range": [242, 303],
+      "topics": ["Samāsa types", "avyayībhāva", "tatpuruṣa", "bahuvrīhi", "dvandva"]
+    },
+    {
+      "number": 8,
+      "title": "Conjugation of Verbs",
+      "range": [304, 433],
+      "topics": ["Verbal roots", "tenses", "moods", "voices", "conjugation classes"]
+    },
+    {
+      "number": 9,
+      "title": "Secondary Conjugations",
+      "range": [434, 487],
+      "topics": ["Causatives", "desideratives", "intensives", "denominatives"]
+    },
+    {
+      "number": 10,
+      "title": "Indeclinables",
+      "range": [488, 500],
+      "topics": ["Avyayas", "particles", "prepositions", "conjunctions"]
+    },
+    {
+      "number": 11,
+      "title": "Formation of Nouns",
+      "range": [501, 603],
+      "topics": ["Kṛt affixes (primary)", "taddhita affixes (secondary)"]
+    },
+    {
+      "number": 12,
+      "title": "Formation of Participles and Gerunds",
+      "range": [604, 629],
+      "topics": ["Participles (present, past, future)", "gerunds", "absolutives"]
+    },
+    {
+      "number": 13,
+      "title": "Accents",
+      "range": [630, 672],
+      "topics": ["Udātta", "anudātta", "svarita", "accentuation rules"]
+    },
+    {
+      "number": 14,
+      "title": "Vedic Grammar",
+      "range": [673, 807],
+      "topics": ["Vedic forms", "archaic usages", "special rules for Vedic Sanskrit"]
+    },
+    {
+      "number": 15,
+      "title": "Syntax",
+      "range": [808, 972],
+      "topics": ["Word order", "case usage", "agreement", "sentence construction"]
+    },
+    {
+      "number": 16,
+      "title": "Appendix: Prosody",
+      "range": [973, 986],
+      "topics": ["Sanskrit versification", "metres", "syllable prosody"]
+    }
+  ]
+}
