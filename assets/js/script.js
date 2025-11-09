@@ -984,8 +984,16 @@ tocSidebar?.addEventListener("click", (e) => {
 });
 
 // Word Index event listeners
-indexButton?.addEventListener("click", openWordIndex);
-closeIndexBtn?.addEventListener("click", closeWordIndex);
+indexButton?.addEventListener("click", () => {
+  console.log("Opening word index");
+  openWordIndex();
+});
+closeIndexBtn?.addEventListener("click", (e) => {
+  console.log("Close button clicked", e);
+  e.preventDefault();
+  e.stopPropagation();
+  closeWordIndex();
+});
 wordSearch?.addEventListener("input", handleWordSearch);
 
 // Close word index on backdrop click
@@ -1187,10 +1195,17 @@ function openWordIndex() {
 }
 
 function closeWordIndex() {
-  indexSidebar.classList.remove("active");
+  console.log("Closing word index", indexSidebar);
+  if (indexSidebar) {
+    indexSidebar.classList.remove("active");
+  }
   document.body.style.overflow = "auto";
-  wordSearch.value = "";
-  displayWordIndex(); // Reset to full list
+  if (wordSearch) {
+    wordSearch.value = "";
+  }
+  if (wordIndexData) {
+    displayWordIndex(); // Reset to full list
+  }
 }
 
 // Image Viewer Functions
