@@ -2,12 +2,12 @@
 import init, { WasmShlesha } from "../wasm/shlesha.js";
 
 // Configuration
-const TOTAL_SECTIONS = 972;
-const MIN_SECTION = 0; // Section 0 is the introduction
+const TOTAL_SECTIONS = 986; // 955 main rules + 17 missing + 14 appendix sections
+const MIN_SECTION = 1; // Start at section 1 (no section 0)
 const CONTENT_BASE_URL = "data/sections";
 
 // State
-let currentSection = 0; // Start at section 0 (introduction)
+let currentSection = 1; // Start at section 1
 let cachedContent = {};
 let currentScript = localStorage.getItem("sanskrit-script") || "devanagari";
 let transliterator = null;
@@ -32,6 +32,13 @@ const helpButton = document.getElementById("help-button");
 const helpModal = document.getElementById("help-modal");
 const closeHelpModalBtn = document.getElementById("close-help-modal");
 const helpContent = document.getElementById("help-content");
+const tocButton = document.getElementById("toc-button");
+const tocSidebar = document.getElementById("toc-sidebar");
+const closeTocBtn = document.getElementById("close-toc");
+const tocContent = document.getElementById("toc-content");
+const imageToggle = document.getElementById("image-toggle");
+const imageViewer = document.getElementById("image-viewer");
+const pageImage = document.getElementById("page-image");
 
 // Initialize Shlesha
 async function initShlesha() {
@@ -248,11 +255,55 @@ function parseFrontmatter(markdown) {
   };
 }
 
+// Parse footnotes
+function parseFootnotes(markdown) {
+  const footnotes = {};
+  const lines = markdown.split("\n");
+  const contentLines = [];
+
+  // Extract footnote definitions [^1]: content
+  for (const line of lines) {
+    const footnoteDefMatch = line.match(/^\[\^(\w+)\]:\s*(.+)$/);
+    if (footnoteDefMatch) {
+      const [, id, content] = footnoteDefMatch;
+      footnotes[id] = content;
+    } else {
+      contentLines.push(line);
+    }
+  }
+
+  // Replace footnote references [^1] with superscript links
+  let content = contentLines.join("\n");
+  content = content.replace(/\[\^(\w+)\]/g, (match, id) => {
+    return `<sup class="footnote-ref"><a href="#fn-${id}" id="fnref-${id}">[${id}]</a></sup>`;
+  });
+
+  // Build footnotes HTML
+  let footnotesHtml = "";
+  if (Object.keys(footnotes).length > 0) {
+    footnotesHtml = '<ol class="footnote-list">\n';
+    for (const [id, fnContent] of Object.entries(footnotes)) {
+      footnotesHtml += `<li id="fn-${id}">${fnContent} <a href="#fnref-${id}" class="footnote-backref">↩</a></li>\n`;
+    }
+    footnotesHtml += "</ol>";
+  }
+
+  return {
+    content,
+    footnotesHtml,
+  };
+}
+
 // Markdown parsing
 function parseMarkdown(markdown) {
   let html = markdown;
 
-  // Parse tables first (before other processing)
+  // Parse footnotes first
+  const footnoteResult = parseFootnotes(html);
+  html = footnoteResult.content;
+  const footnotesHtml = footnoteResult.footnotesHtml;
+
+  // Parse tables (before other processing)
   html = parseTables(html);
 
   // Horizontal rules (but not frontmatter)
@@ -297,7 +348,14 @@ function parseMarkdown(markdown) {
     paragraphs.push(`<p>${currentParagraph}</p>`);
   }
 
-  return paragraphs.join("\n");
+  let result = paragraphs.join("\n");
+
+  // Append footnotes if any
+  if (footnotesHtml) {
+    result += `\n<div class="footnotes">\n<hr>\n${footnotesHtml}\n</div>`;
+  }
+
+  return result;
 }
 
 // Parse markdown tables
@@ -428,9 +486,8 @@ function updateNavigation() {
   prevButton.disabled = currentSection <= MIN_SECTION;
   nextButton.disabled = currentSection >= TOTAL_SECTIONS;
 
-  // Show "Introduction" for section 0, otherwise show section number
-  const sectionLabel =
-    currentSection === 0 ? "Introduction" : `Section ${currentSection}`;
+  // Display section number (§ symbol for rules)
+  const sectionLabel = `§ ${currentSection}`;
   sectionCounter.textContent = `${sectionLabel} of ${TOTAL_SECTIONS}`;
 }
 
@@ -709,6 +766,20 @@ document.querySelectorAll(".script-option").forEach((option) => {
   });
 });
 
+// TOC event listeners
+tocButton?.addEventListener("click", openTOC);
+closeTocBtn?.addEventListener("click", closeTOC);
+
+// Close TOC on backdrop click
+tocSidebar?.addEventListener("click", (e) => {
+  if (e.target === tocSidebar) {
+    closeTOC();
+  }
+});
+
+// Image viewer event listener
+imageToggle?.addEventListener("click", toggleImage);
+
 // Help modal event listeners
 helpButton?.addEventListener("click", openHelpModal);
 closeHelpModalBtn?.addEventListener("click", closeHelpModal);
@@ -733,10 +804,12 @@ editModal?.addEventListener("click", (e) => {
   }
 });
 
-// Close modals on Escape key
+// Close modals and sidebar on Escape key
 document.addEventListener("keydown", (e) => {
   if (e.key === "Escape") {
-    if (helpModal?.classList.contains("active")) {
+    if (tocSidebar?.classList.contains("active")) {
+      closeTOC();
+    } else if (helpModal?.classList.contains("active")) {
       closeHelpModal();
     } else if (editModal?.classList.contains("active")) {
       closeEditModal();
@@ -760,6 +833,85 @@ function preloadAdjacentSections() {
   }
 }
 
+// TOC Functions
+async function loadTOC() {
+  try {
+    const response = await fetch("data/TABLE_OF_CONTENTS.md");
+    if (!response.ok) throw new Error("Failed to load TOC");
+    const markdown = await response.text();
+
+    // Parse and render the TOC
+    const { frontmatter, markdown: contentMarkdown } =
+      parseFrontmatter(markdown);
+    const html = parseMarkdown(contentMarkdown);
+
+    // Make section links clickable
+    const processedHtml = html.replace(/§ (\d+)/g, (match, num) => {
+      return `<a href="#" class="toc-link" data-section="${num}">§ ${num}</a>`;
+    });
+
+    tocContent.innerHTML = processedHtml;
+
+    // Add click handlers to TOC links
+    tocContent.querySelectorAll(".toc-link").forEach((link) => {
+      link.addEventListener("click", (e) => {
+        e.preventDefault();
+        const sectionNum = parseInt(link.getAttribute("data-section"));
+        displaySection(sectionNum);
+        closeTOC();
+      });
+    });
+  } catch (error) {
+    tocContent.innerHTML = `<p class="error">Failed to load Table of Contents: ${error.message}</p>`;
+  }
+}
+
+function openTOC() {
+  tocSidebar.classList.add("active");
+  document.body.style.overflow = "hidden";
+}
+
+function closeTOC() {
+  tocSidebar.classList.remove("active");
+  document.body.style.overflow = "auto";
+}
+
+// Image Viewer Functions
+function updateImage(sectionNum) {
+  // Get image path from frontmatter if available
+  const markdown = cachedContent[sectionNum];
+  if (!markdown) return;
+
+  const { frontmatter } = parseFrontmatter(markdown);
+  if (!frontmatter) return;
+
+  // Try to extract image path from frontmatter
+  const imageMatch = frontmatter.match(/image:\s*(.+)/);
+  if (imageMatch) {
+    const imagePath = imageMatch[1].trim();
+    pageImage.src = `assets${imagePath}`;
+  } else {
+    // Fallback: try to find corresponding image by section number
+    const paddedNum = String(sectionNum).padStart(3, "0");
+    pageImage.src = `assets/images/${paddedNum}.png`;
+  }
+
+  // Handle image load errors
+  pageImage.onerror = () => {
+    imageViewer.style.display = "none";
+    console.warn(`No image found for section ${sectionNum}`);
+  };
+}
+
+function toggleImage() {
+  if (imageViewer.style.display === "none") {
+    imageViewer.style.display = "block";
+    updateImage(currentSection);
+  } else {
+    imageViewer.style.display = "none";
+  }
+}
+
 // Initialize everything
 async function main() {
   await initShlesha();
@@ -767,6 +919,7 @@ async function main() {
   initScript();
   currentSection = getSectionFromUrl();
   await displaySection(currentSection);
+  await loadTOC();
   setTimeout(preloadAdjacentSections, 1000);
 }
 
