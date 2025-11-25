@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//Users/skmnktl/github/udapaana/vyakarana/**)",
+      "Read(//Users/skmnktl/Downloads/ocr/phase3_rules/core/**)",
+      "Read(//Users/skmnktl/Downloads/ocr/phase3_rules/appendix_prosody/**)",
+      "Bash(lsof:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

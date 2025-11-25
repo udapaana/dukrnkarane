@@ -2,9 +2,11 @@
 import init, { WasmShlesha } from "../wasm/shlesha.js";
 
 // Configuration
-const TOTAL_SECTIONS = 986; // 955 main rules + 17 missing + 14 appendix sections
+const TOTAL_SECTIONS = 986; // 972 core rules + 14 appendix sections
 const MIN_SECTION = 1; // Start at section 1 (no section 0)
-const CONTENT_BASE_URL = "data/sections";
+const CORE_RULES_COUNT = 972; // Number of core rules
+const CONTENT_BASE_URL_RULES = "data/rules";
+const CONTENT_BASE_URL_APPENDIX = "data/appendix";
 const CHAPTERS_URL = "data/chapters.json";
 
 // State
@@ -46,9 +48,13 @@ const closeIndexBtn = document.getElementById("close-index");
 const indexContent = document.getElementById("index-content");
 const wordSearch = document.getElementById("word-search");
 const searchStats = document.getElementById("search-stats");
-const imageToggle = document.getElementById("image-toggle");
-const imageViewer = document.getElementById("image-viewer");
-const pageImage = document.getElementById("page-image");
+const sidebarBackdrop = document.getElementById("sidebar-backdrop");
+const viewImageBtn = document.getElementById("view-image-btn");
+const imageLightbox = document.getElementById("image-lightbox");
+const lightboxImage = document.getElementById("lightbox-image");
+const closeLightboxBtn = document.getElementById("close-lightbox");
+const lightboxPrevBtn = document.getElementById("lightbox-prev");
+const lightboxNextBtn = document.getElementById("lightbox-next");
 
 // Load chapters metadata
 async function loadChapters() {
@@ -136,34 +142,165 @@ function changeScript(newScript) {
   transliterateContent();
 }
 
+// Process cross-references (@ref[N] or @ref[N,M])
+function processCrossReferences(text) {
+  // Handle @ref[N] and @ref[N,M,O] patterns
+  const refPattern = /@ref\[([^\]]+)\]/g;
+
+  return text.replace(refPattern, (match, refs) => {
+    // Split by comma for multiple refs
+    const refNumbers = refs.split(",").map((r) => r.trim());
+
+    const links = refNumbers.map((ref) => {
+      // Check for special prefixes (prosody:, dhatu:, panini:, vartika:, etc.)
+      if (ref.includes(":")) {
+        const [prefix, value] = ref.split(":", 2);
+        if (prefix === "prosody") {
+          // Prosody appendix: sections 973-986
+          const appendixNum = parseInt(value);
+          const sectionNum = CORE_RULES_COUNT + appendixNum;
+          return `<a href="#" class="ref-link" data-section="${sectionNum}">Prosody § ${value}</a>`;
+        } else if (prefix === "dhatu") {
+          // Verb dictionary reference (dhātu)
+          return `<span class="dhatu-ref" title="Verb root: ${value}">√${value}</span>`;
+        } else if (prefix === "panini") {
+          // External Pāṇini reference
+          return `<span class="panini-ref-inline" title="Pāṇini ${value}">Pāṇ. ${value}</span>`;
+        } else if (prefix === "vartika") {
+          // Vārtika reference
+          return `<span class="external-ref" title="Vārtika: ${value}">Vārt. ${value}</span>`;
+        } else {
+          // Other external refs
+          return `<span class="external-ref">${ref}</span>`;
+        }
+      } else {
+        // Core grammar rule reference
+        const num = parseInt(ref);
+        if (!isNaN(num) && num >= 1 && num <= CORE_RULES_COUNT) {
+          return `<a href="#" class="ref-link" data-section="${num}">§ ${num}</a>`;
+        }
+        return ref;
+      }
+    });
+
+    return links.join(", ");
+  });
+}
+
 // Process Sanskrit markers - store original in data attributes
 function processSanskritMarkers(markdown) {
   let processed = markdown;
 
-  // Process @deva[...] markers - SOURCE is Devanagari
-  processed = processed.replace(/@deva\[(.*?)\]/g, (match, content) => {
-    return `<span class="sanskrit-inline" data-sanskrit="${content}" data-source-script="devanagari">${content}</span>`;
-  });
+  // FIRST: Process block-level markers (so inline markers within them are preserved)
 
-  // Process @[...] markers - SOURCE is IAST
-  processed = processed.replace(/@\[(.*?)\]/g, (match, content) => {
-    return `<span class="sanskrit-inline" data-sanskrit="${content}" data-source-script="iast">${content}</span>`;
+  // Process @deva: ... :@ block markers - SOURCE is Devanagari
+  processed = processed.replace(/@deva:([\s\S]*?):@/g, (match, content) => {
+    const trimmedContent = content.trim();
+    const escapedContent = trimmedContent
+      .replace(/"/g, "&quot;")
+      .replace(/\n/g, "&#10;");
+    // Put placeholder text, transliteration will fill in actual content with <br> tags
+    return `<div class="sanskrit-block" data-sanskrit="${escapedContent}" data-source-script="devanagari">__SANSKRIT_BLOCK__</div>`;
   });
 
   // Process @: ... :@ block markers - SOURCE is IAST
   processed = processed.replace(/@:([\s\S]*?):@/g, (match, content) => {
     const trimmedContent = content.trim();
-    return `<div class="sanskrit-block" data-sanskrit="${trimmedContent}" data-source-script="iast">${trimmedContent}</div>`;
+    const escapedContent = trimmedContent
+      .replace(/"/g, "&quot;")
+      .replace(/\n/g, "&#10;");
+    return `<div class="sanskrit-block" data-sanskrit="${escapedContent}" data-source-script="iast">__SANSKRIT_BLOCK__</div>`;
   });
 
-  // Process @line: ... :@ numbered verse markers - SOURCE is IAST
+  // Process @line: ... :@ numbered verse markers - contains inline markers, process content recursively
   processed = processed.replace(/@line:([\s\S]*?):@/g, (match, content) => {
     const trimmedContent = content.trim();
-    const lines = trimmedContent.split("\n");
-    const lineHtml = lines
-      .map((line) => `<div class="verse-line">${line}</div>`)
-      .join("");
-    return `<div class="sanskrit-verse" data-sanskrit="${trimmedContent}" data-source-script="iast">${lineHtml}</div>`;
+
+    // Process inline markers within the line content
+    let lineContent = trimmedContent;
+    lineContent = lineContent.replace(/@deva\[(.*?)\]/g, (m, c) => {
+      const escaped = c.replace(/"/g, "&quot;");
+      return `<span class="sanskrit-inline" data-sanskrit="${escaped}" data-source-script="devanagari">${c}</span>`;
+    });
+    lineContent = lineContent.replace(/@\[(.*?)\]/g, (m, c) => {
+      const escaped = c.replace(/"/g, "&quot;");
+      return `<span class="sanskrit-inline" data-sanskrit="${escaped}" data-source-script="iast">${c}</span>`;
+    });
+
+    // Don't store original with markers - just mark as mixed for transliteration
+    return `<div class="sanskrit-verse" data-source-script="mixed">${lineContent}</div>`;
+  });
+
+  // Process @note[type=X]{content} markers (new curly brace format)
+  processed = processed.replace(
+    /@note\[type=(\w+)\]\{(.*?)\}/gs,
+    (match, type, content) => {
+      const trimmedContent = content.trim();
+      const className =
+        type === "nota-bene" ? "note nota-bene" : `note note-${type}`;
+      return `<div class="${className}">${trimmedContent}</div>`;
+    },
+  );
+
+  // Process @note[type=X]: ... markers (old colon format - for backward compatibility)
+  processed = processed.replace(
+    /@note\[type=(\w+)\]:\s*(.*?)(?=\n\n|\n(?=[#\[@])|$)/gs,
+    (match, type, content) => {
+      const trimmedContent = content.trim();
+      const className =
+        type === "nota-bene" ? "note nota-bene" : `note note-${type}`;
+      return `<div class="${className}">${trimmedContent}</div>`;
+    },
+  );
+
+  // Process @example[deva>>...] and @example[iast>>...] tags
+  processed = processed.replace(
+    /@example\[(deva|iast)>>([^\]]+)\]:\s*(.+?)(?=\n|$)/g,
+    (match, scriptType, text, translation) => {
+      const sourceScript = scriptType === "deva" ? "devanagari" : "iast";
+      const escaped = text.replace(/"/g, "&quot;");
+      return `<span class="example"><span class="sanskrit-inline" data-sanskrit="${escaped}" data-source-script="${sourceScript}">${text}</span>: ${translation.trim()}</span>`;
+    },
+  );
+
+  // Process @example[grammatical]{...} tags
+  processed = processed.replace(
+    /@example\[grammatical\]\{([^}]+)\}/g,
+    (match, content) => {
+      return `<span class="example grammatical">${content}</span>`;
+    },
+  );
+
+  // SECOND: Process inline markers (after blocks are done)
+
+  // Process @deva[... | iast>>...] paired format - Devanagari primary
+  processed = processed.replace(
+    /@deva\[([^|\]]+)\s*\|\s*iast>>([^\]]+)\]/g,
+    (match, deva, iast) => {
+      const escapedDeva = deva.trim().replace(/"/g, "&quot;");
+      const escapedIast = iast.trim().replace(/"/g, "&quot;");
+      return `<span class="sanskrit-inline paired" data-sanskrit="${escapedDeva}" data-alt-sanskrit="${escapedIast}" data-source-script="devanagari" data-alt-script="iast">${escapedDeva}</span>`;
+    },
+  );
+
+  // Process @[... | deva>>...] paired format - IAST primary
+  processed = processed.replace(
+    /@\[([^|\]]+)\s*\|\s*deva>>([^\]]+)\]/g,
+    (match, iast, deva) => {
+      const escapedIast = iast.trim().replace(/"/g, "&quot;");
+      const escapedDeva = deva.trim().replace(/"/g, "&quot;");
+      return `<span class="sanskrit-inline paired" data-sanskrit="${escapedIast}" data-alt-sanskrit="${escapedDeva}" data-source-script="iast" data-alt-script="devanagari">${escapedIast}</span>`;
+    },
+  );
+
+  // Process @deva[...] markers - SOURCE is Devanagari (single format)
+  processed = processed.replace(/@deva\[(.*?)\]/g, (match, content) => {
+    return `<span class="sanskrit-inline" data-sanskrit="${content}" data-source-script="devanagari">${content}</span>`;
+  });
+
+  // Process @[...] markers - SOURCE is IAST (single format)
+  processed = processed.replace(/@\[(.*?)\]/g, (match, content) => {
+    return `<span class="sanskrit-inline" data-sanskrit="${content}" data-source-script="iast">${content}</span>`;
   });
 
   return processed;
@@ -203,61 +340,128 @@ function transliterateContent() {
     const original = element.getAttribute("data-sanskrit");
     const sourceScript = element.getAttribute("data-source-script");
 
+    // Decode HTML entities (&#10; back to \n)
+    const decodedOriginal = original.replace(/&#10;/g, "\n");
+
     if (sourceScript === currentScript) {
-      element.innerHTML = original.split("\n").join("<br>");
+      element.innerHTML = decodedOriginal.split("\n").join("<br>");
     } else {
       try {
-        const lines = original.split("\n");
+        const lines = decodedOriginal.split("\n");
         const transliteratedLines = lines.map((line) =>
           transliterator.transliterate(line, sourceScript, currentScript),
         );
         element.innerHTML = transliteratedLines.join("<br>");
       } catch (e) {
-        console.warn("Transliteration failed for block:", original, e);
-        element.innerHTML = original.split("\n").join("<br>");
+        console.warn("Transliteration failed for block:", decodedOriginal, e);
+        element.innerHTML = decodedOriginal.split("\n").join("<br>");
       }
     }
   });
 
   // Transliterate verse Sanskrit
   document.querySelectorAll(".sanskrit-verse").forEach((element) => {
-    const original = element.getAttribute("data-sanskrit");
     const sourceScript = element.getAttribute("data-source-script");
 
-    const lines = original.split("\n");
-    if (sourceScript === currentScript) {
-      element.innerHTML = lines
-        .map((line) => `<div class="verse-line">${line}</div>`)
-        .join("");
+    // For mixed-script verses (like @line: with inline @deva[]),
+    // transliterate the individual inline spans instead
+    if (sourceScript === "mixed") {
+      // Just transliterate the inline spans within this verse
+      element.querySelectorAll(".sanskrit-inline").forEach((span) => {
+        const spanOriginal = span.getAttribute("data-sanskrit");
+        const spanSourceScript = span.getAttribute("data-source-script");
+
+        if (spanSourceScript === currentScript) {
+          span.textContent = spanOriginal;
+        } else {
+          try {
+            const transliterated = transliterator.transliterate(
+              spanOriginal,
+              spanSourceScript,
+              currentScript,
+            );
+            span.textContent = transliterated;
+          } catch (e) {
+            console.warn("Transliteration failed for inline:", spanOriginal, e);
+            span.textContent = spanOriginal;
+          }
+        }
+      });
     } else {
-      try {
-        const transliteratedLines = lines.map((line) => {
-          const transliterated = transliterator.transliterate(
-            line,
-            sourceScript,
-            currentScript,
-          );
-          return `<div class="verse-line">${transliterated}</div>`;
-        });
-        element.innerHTML = transliteratedLines.join("");
-      } catch (e) {
-        console.warn("Transliteration failed for verse:", original, e);
+      // Original verse transliteration for non-mixed verses
+      const original = element.getAttribute("data-sanskrit");
+      if (!original) {
+        // No data-sanskrit attribute, skip
+        return;
+      }
+
+      const lines = original.split("\n");
+      if (sourceScript === currentScript) {
         element.innerHTML = lines
           .map((line) => `<div class="verse-line">${line}</div>`)
           .join("");
+      } else {
+        try {
+          const transliteratedLines = lines.map((line) => {
+            const transliterated = transliterator.transliterate(
+              line,
+              sourceScript,
+              currentScript,
+            );
+            return `<div class="verse-line">${transliterated}</div>`;
+          });
+          element.innerHTML = transliteratedLines.join("");
+        } catch (e) {
+          console.warn("Transliteration failed for verse:", original, e);
+          element.innerHTML = lines
+            .map((line) => `<div class="verse-line">${line}</div>`)
+            .join("");
+        }
       }
     }
   });
 }
 
+// Helper function to get image paths for a section (returns array)
+function getImagePaths(sectionNum, metadata) {
+  if (
+    !metadata ||
+    !metadata.image_files ||
+    !Array.isArray(metadata.image_files)
+  ) {
+    return [];
+  }
+
+  const isAppendix = sectionNum > CORE_RULES_COUNT;
+  const imageBasePath = isAppendix
+    ? "assets/images/appendix"
+    : "assets/images/rules";
+
+  return metadata.image_files.map((file) => `${imageBasePath}/${file}`);
+}
+
+// Get first image path (for backward compatibility)
+function getImagePath(sectionNum, metadata) {
+  const paths = getImagePaths(sectionNum, metadata);
+  return paths.length > 0 ? paths[0] : null;
+}
+
 // Content loading
 async function loadSection(sectionNum) {
-  const paddedNum = String(sectionNum).padStart(3, "0");
-  const url = `${CONTENT_BASE_URL}/${paddedNum}.md`;
-
   if (cachedContent[sectionNum]) {
     return cachedContent[sectionNum];
   }
+
+  // Determine if this is a core rule or appendix
+  const isAppendix = sectionNum > CORE_RULES_COUNT;
+  const baseUrl = isAppendix
+    ? CONTENT_BASE_URL_APPENDIX
+    : CONTENT_BASE_URL_RULES;
+
+  // For appendix, remap section numbers 973-986 to 001-014
+  const fileNum = isAppendix ? sectionNum - CORE_RULES_COUNT : sectionNum;
+  const paddedNum = String(fileNum).padStart(3, "0");
+  const url = `${baseUrl}/${paddedNum}.md`;
 
   try {
     const response = await fetch(url);
@@ -273,41 +477,152 @@ async function loadSection(sectionNum) {
   }
 }
 
-// Parse frontmatter
+// Parse frontmatter (YAML to object)
 function parseFrontmatter(markdown) {
   const frontmatterRegex = /^---\n([\s\S]*?)\n---\n/;
   const match = markdown.match(frontmatterRegex);
 
-  if (match) {
-    const frontmatterContent = match[1];
-    const remainingMarkdown = markdown.slice(match[0].length);
+  if (!match) {
     return {
-      frontmatter: frontmatterContent,
-      markdown: remainingMarkdown,
+      frontmatter: null,
+      frontmatterRaw: null,
+      metadata: {},
+      markdown: markdown,
     };
   }
 
+  const frontmatterRaw = match[1];
+  const remainingMarkdown = markdown.slice(match[0].length);
+
+  // Parse YAML frontmatter into object
+  const metadata = parseYAML(frontmatterRaw);
+
   return {
-    frontmatter: null,
-    markdown: markdown,
+    frontmatter: frontmatterRaw,
+    frontmatterRaw: frontmatterRaw,
+    metadata: metadata,
+    markdown: remainingMarkdown,
   };
 }
 
-// Parse footnotes
+// Simple YAML parser for our frontmatter (supports strings, numbers, arrays)
+function parseYAML(yaml) {
+  const result = {};
+  const lines = yaml.split("\n");
+  let currentKey = null;
+  let currentArray = null;
+
+  for (const line of lines) {
+    // Skip empty lines
+    if (!line.trim()) continue;
+
+    // Array item
+    if (line.match(/^\s+-\s+/)) {
+      const value = line.replace(/^\s+-\s+/, "").trim();
+      // Remove quotes if present
+      const cleanValue = value.replace(/^["']|["']$/g, "");
+      if (currentArray) {
+        currentArray.push(cleanValue);
+      }
+      continue;
+    }
+
+    // Key-value pair
+    const kvMatch = line.match(/^([^:]+):\s*(.*)$/);
+    if (kvMatch) {
+      const [, key, value] = kvMatch;
+      const cleanKey = key.trim();
+      const cleanValue = value.trim();
+
+      currentKey = cleanKey;
+
+      if (cleanValue === "") {
+        // Start of array
+        currentArray = [];
+        result[cleanKey] = currentArray;
+      } else {
+        // Simple value
+        currentArray = null;
+        // Remove quotes and parse
+        let parsed = cleanValue.replace(/^["']|["']$/g, "");
+        // Try to parse as number
+        if (/^\d+$/.test(parsed)) {
+          parsed = parseInt(parsed);
+        }
+        result[cleanKey] = parsed;
+      }
+    }
+  }
+
+  return result;
+}
+
+// Parse footnotes - supports multi-line footnotes with indentation
 function parseFootnotes(markdown) {
   const footnotes = {};
   const lines = markdown.split("\n");
   const contentLines = [];
+  let currentFootnoteId = null;
+  let currentFootnoteContent = [];
+  let inFootnoteSection = false;
 
   // Extract footnote definitions [^1]: content
-  for (const line of lines) {
-    const footnoteDefMatch = line.match(/^\[\^(\w+)\]:\s*(.+)$/);
-    if (footnoteDefMatch) {
-      const [, id, content] = footnoteDefMatch;
-      footnotes[id] = content;
-    } else {
-      contentLines.push(line);
+  // Multi-line footnotes: continuation lines are indented with spaces (2 or 4)
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const footnoteDefMatch = line.match(/^\[\^(\w+)\]:\s*(.*)$/);
+
+    // Check if we hit a separator (---) after content - marks start of footnote section
+    if (line.trim() === "---" && !inFootnoteSection && i > 0) {
+      // Check if there are footnote definitions after this separator
+      let hasFootnotesAfter = false;
+      for (let j = i + 1; j < lines.length; j++) {
+        if (lines[j].match(/^\[\^(\w+)\]:/)) {
+          hasFootnotesAfter = true;
+          break;
+        }
+      }
+      if (hasFootnotesAfter) {
+        inFootnoteSection = true;
+        continue; // Skip the separator line itself
+      }
     }
+
+    if (footnoteDefMatch) {
+      // Save previous footnote if any
+      if (currentFootnoteId) {
+        footnotes[currentFootnoteId] = currentFootnoteContent.join("\n");
+      }
+
+      // Start new footnote
+      const [, id, content] = footnoteDefMatch;
+      currentFootnoteId = id;
+      currentFootnoteContent = [content];
+      inFootnoteSection = true;
+    } else if (currentFootnoteId && line.match(/^  +/)) {
+      // Continuation line (indented with 2 or more spaces)
+      const indent = line.match(/^( +)/)[1].length;
+      currentFootnoteContent.push(line.substring(Math.min(indent, 4))); // Remove up to 4 spaces of indent
+    } else if (currentFootnoteId && line.trim() === "") {
+      // Empty line within footnote - preserve it
+      currentFootnoteContent.push("");
+    } else if (!inFootnoteSection) {
+      // Regular content line (before footnote section)
+      contentLines.push(line);
+    } else {
+      // After we're in footnote section, non-indented non-footnote lines end current footnote
+      if (currentFootnoteId && line.trim() !== "") {
+        footnotes[currentFootnoteId] = currentFootnoteContent.join("\n");
+        currentFootnoteId = null;
+        currentFootnoteContent = [];
+      }
+      // Don't add to content lines - we're in footnote section
+    }
+  }
+
+  // Save last footnote if any
+  if (currentFootnoteId) {
+    footnotes[currentFootnoteId] = currentFootnoteContent.join("\n");
   }
 
   // Replace footnote references [^1] with superscript links
@@ -321,7 +636,16 @@ function parseFootnotes(markdown) {
   if (Object.keys(footnotes).length > 0) {
     footnotesHtml = '<ol class="footnote-list">\n';
     for (const [id, fnContent] of Object.entries(footnotes)) {
-      footnotesHtml += `<li id="fn-${id}">${fnContent} <a href="#fnref-${id}" class="footnote-backref">↩</a></li>\n`;
+      // Process footnote content for Sanskrit markers and markup
+      let processedFnContent = processSanskritMarkers(fnContent);
+      processedFnContent = processCrossReferences(processedFnContent);
+      // Parse basic markdown in footnotes (bold, italic, etc.) but skip complex parsing
+      processedFnContent = processedFnContent
+        .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+        .replace(/\*([^*]+)\*/g, "<em>$1</em>")
+        .replace(/`([^`]+)`/g, "<code>$1</code>");
+
+      footnotesHtml += `<li id="fn-${id}">${processedFnContent} <a href="#fnref-${id}" class="footnote-backref">↩</a></li>\n`;
     }
     footnotesHtml += "</ol>";
   }
@@ -438,7 +762,7 @@ function parseMarkdown(markdown) {
 
   // Append footnotes if any
   if (footnotesHtml) {
-    result += `\n<div class="footnotes">\n<hr>\n${footnotesHtml}\n</div>`;
+    result += `\n<div class="footnotes">\n${footnotesHtml}\n</div>`;
   }
 
   return result;
@@ -481,7 +805,7 @@ function parseTables(markdown) {
     i++;
   }
 
-  return result.join("\n").replace(/__TABLE__(.*?)__TABLE__/g, "$1");
+  return result.join("\n").replace(/__TABLE__([\s\S]*?)__TABLE__/g, "$1");
 }
 
 // Parse table lines into HTML
@@ -545,18 +869,47 @@ async function displayChapter(chapter, scrollToSection = null) {
     for (let i = start; i <= end; i++) {
       try {
         const markdown = await loadSection(i);
-        const { frontmatter, markdown: contentMarkdown } =
+        const { metadata, markdown: contentMarkdown } =
           parseFrontmatter(markdown);
 
         // Process and parse
-        const processedMarkdown = processSanskritMarkers(contentMarkdown);
+        let processedMarkdown = processSanskritMarkers(contentMarkdown);
+        processedMarkdown = processCrossReferences(processedMarkdown);
         const html = parseMarkdown(processedMarkdown);
+
+        // Build section header with title
+        const ruleId = metadata.rule_id || `§ ${i}`;
+        const title = metadata.title || "";
+        const sectionTitle = title ? `${ruleId}: ${title}` : ruleId;
+
+        // Check if image exists for this section
+        let imageButton = "";
+        const imagePath = getImagePath(i, metadata);
+        if (imagePath) {
+          imageButton = `<button class="section-image-btn" data-image="${imagePath}" title="View scanned page">📄</button>`;
+        }
+
+        // Build topics tags
+        let topicsTags = "";
+        if (
+          metadata.topics &&
+          Array.isArray(metadata.topics) &&
+          metadata.topics.length > 0
+        ) {
+          topicsTags = `<div class="topics-tags">${metadata.topics
+            .map((topic) => `<span class="topic-tag">${topic}</span>`)
+            .join("")}</div>`;
+        }
 
         // Wrap each section with an anchor
         sections.push(`
           <section id="s-${i}" class="grammar-section" data-section="${i}">
-            <div class="section-anchor">
-              <a href="#s-${i}" class="section-link">§ ${i}</a>
+            <div class="section-header">
+              <div class="section-anchor">
+                <a href="#s-${i}" class="section-link">${sectionTitle}</a>
+                ${imageButton}
+              </div>
+              ${topicsTags}
             </div>
             ${html}
           </section>
@@ -582,7 +935,12 @@ async function displayChapter(chapter, scrollToSection = null) {
     transliterateContent();
 
     currentChapter = chapter;
+    currentSection = scrollToSection || start;
     updateNavigation();
+
+    // Add click handlers to image buttons and cross-references
+    setupImageButtonHandlers();
+    setupRefLinkHandlers();
 
     // Scroll to specific section if requested
     if (scrollToSection) {
@@ -630,16 +988,47 @@ async function displaySingleSection(sectionNum) {
     const markdown = await loadSection(sectionNum);
 
     // Parse frontmatter
-    const { frontmatter, markdown: contentMarkdown } =
-      parseFrontmatter(markdown);
+    const { metadata, markdown: contentMarkdown } = parseFrontmatter(markdown);
 
     // Process Sanskrit markers and parse markdown
-    const processedMarkdown = processSanskritMarkers(contentMarkdown);
+    let processedMarkdown = processSanskritMarkers(contentMarkdown);
+    processedMarkdown = processCrossReferences(processedMarkdown);
     const html = parseMarkdown(processedMarkdown);
+
+    // Build section header with title
+    const ruleId = metadata.rule_id || `§ ${sectionNum}`;
+    const title = metadata.title || "";
+    const sectionTitle = title ? `${ruleId}: ${title}` : ruleId;
+
+    // Check if image exists for this section
+    let imageButton = "";
+    const imagePath = getImagePath(sectionNum, metadata);
+    if (imagePath) {
+      imageButton = `<button class="section-image-btn" data-image="${imagePath}" title="View scanned page">📄</button>`;
+    }
+
+    // Build topics tags
+    let topicsTags = "";
+    if (
+      metadata.topics &&
+      Array.isArray(metadata.topics) &&
+      metadata.topics.length > 0
+    ) {
+      topicsTags = `<div class="topics-tags">${metadata.topics
+        .map((topic) => `<span class="topic-tag">${topic}</span>`)
+        .join("")}</div>`;
+    }
 
     // Wrap with section anchor
     let finalHtml = `
       <section id="s-${sectionNum}" class="grammar-section" data-section="${sectionNum}">
+        <div class="section-header">
+          <div class="section-anchor">
+            <a href="#s-${sectionNum}" class="section-link">${sectionTitle}</a>
+            ${imageButton}
+          </div>
+          ${topicsTags}
+        </div>
         ${html}
       </section>
     `;
@@ -650,6 +1039,10 @@ async function displaySingleSection(sectionNum) {
     transliterateContent();
 
     currentSection = sectionNum;
+
+    // Add click handlers to image buttons and cross-references
+    setupImageButtonHandlers();
+    setupRefLinkHandlers();
     updateNavigation();
 
     const newUrl = `${window.location.pathname}?section=${sectionNum}`;
@@ -984,9 +1377,16 @@ tocSidebar?.addEventListener("click", (e) => {
 });
 
 // Word Index event listeners
-indexButton?.addEventListener("click", () => {
-  console.log("Opening word index");
+indexButton?.addEventListener("click", async () => {
+  console.log("Index button clicked");
+
+  // Open the sidebar first
   openWordIndex();
+
+  // Load index on first open if not loaded yet
+  if (!wordIndexData) {
+    await loadWordIndex();
+  }
 });
 closeIndexBtn?.addEventListener("click", (e) => {
   console.log("Close button clicked", e);
@@ -1003,8 +1403,16 @@ indexSidebar?.addEventListener("click", (e) => {
   }
 });
 
-// Image viewer event listener
-imageToggle?.addEventListener("click", toggleImage);
+// Close sidebars when clicking backdrop
+sidebarBackdrop?.addEventListener("click", () => {
+  if (tocSidebar?.classList.contains("active")) {
+    closeTOC();
+  } else if (indexSidebar?.classList.contains("active")) {
+    closeWordIndex();
+  }
+});
+
+// Image viewer is now handled by floating button + lightbox
 
 // Help modal event listeners
 helpButton?.addEventListener("click", openHelpModal);
@@ -1064,24 +1472,115 @@ function preloadAdjacentSections() {
 // TOC Functions
 async function loadTOC() {
   try {
-    const response = await fetch("data/TABLE_OF_CONTENTS.md");
-    if (!response.ok) throw new Error("Failed to load TOC");
-    const markdown = await response.text();
+    if (!chaptersData) {
+      await loadChapters();
+    }
 
-    // Parse and render the TOC
-    const { frontmatter, markdown: contentMarkdown } =
-      parseFrontmatter(markdown);
-    const html = parseMarkdown(contentMarkdown);
+    if (!chaptersData || chaptersData.length === 0) {
+      throw new Error("Chapters data not available");
+    }
 
-    // Make section links clickable
-    const processedHtml = html.replace(/§ (\d+)/g, (match, num) => {
-      return `<a href="#" class="toc-link" data-section="${num}">§ ${num}</a>`;
+    // Build rich HTML from chapters.json with collapsible sections
+    let html = '<div class="toc-list">';
+
+    chaptersData.forEach((chapter) => {
+      const [start, end] = chapter.range;
+      const isAppendix = chapter.number >= 27;
+      const chapterId = `chapter-${chapter.number}`;
+
+      html += `
+        <div class="toc-chapter ${isAppendix ? "toc-appendix" : ""}" data-chapter="${chapter.number}">
+          <div class="toc-chapter-header">
+            <button class="toc-expand-btn" data-chapter-id="${chapterId}" aria-label="Expand chapter">
+              <span class="expand-icon">›</span>
+            </button>
+            <div class="toc-chapter-info">
+              <div class="toc-chapter-title-row">
+                <span class="toc-chapter-number">Chapter ${chapter.number}</span>
+                <span class="toc-chapter-title">${chapter.title}</span>
+              </div>
+              <span class="toc-chapter-range">§ ${start}–${end}</span>
+            </div>
+          </div>
+
+          <div class="toc-chapter-content" id="${chapterId}" style="display: none;">
+            <div class="toc-sections-loading">Loading sections...</div>
+          </div>
+        </div>
+      `;
     });
 
-    tocContent.innerHTML = processedHtml;
+    html += "</div>";
 
-    // Add click handlers to TOC links
-    tocContent.querySelectorAll(".toc-link").forEach((link) => {
+    tocContent.innerHTML = html;
+
+    // Add click handlers to expand buttons
+    tocContent.querySelectorAll(".toc-expand-btn").forEach((btn) => {
+      btn.addEventListener("click", async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const chapterId = btn.getAttribute("data-chapter-id");
+        const contentDiv = document.getElementById(chapterId);
+        const chapterNum = parseInt(
+          btn.closest(".toc-chapter").getAttribute("data-chapter"),
+        );
+
+        if (contentDiv.style.display === "none") {
+          // Expand
+          btn.classList.add("expanded");
+          contentDiv.style.display = "block";
+
+          // Load sections if not already loaded
+          if (contentDiv.querySelector(".toc-sections-loading")) {
+            await loadChapterSections(chapterNum, contentDiv);
+          }
+        } else {
+          // Collapse
+          btn.classList.remove("expanded");
+          contentDiv.style.display = "none";
+        }
+      });
+    });
+  } catch (error) {
+    console.error("Failed to load TOC:", error);
+    tocContent.innerHTML = `<p class="error">Failed to load Table of Contents: ${error.message}</p>`;
+  }
+}
+
+// Load individual sections for a chapter
+async function loadChapterSections(chapterNum, contentDiv) {
+  try {
+    const chapter = chaptersData.find((ch) => ch.number === chapterNum);
+    if (!chapter) return;
+
+    const [start, end] = chapter.range;
+    let sectionsHtml = '<div class="toc-sections">';
+
+    // Load section metadata for each section in the chapter
+    for (let sectionNum = start; sectionNum <= end; sectionNum++) {
+      try {
+        const markdown = await loadSection(sectionNum);
+        const { metadata } = parseFrontmatter(markdown);
+
+        const ruleId = metadata.rule_id || `§ ${sectionNum}`;
+        const title = metadata.title || "";
+
+        sectionsHtml += `
+          <a href="#" class="toc-section-link" data-section="${sectionNum}">
+            <span class="toc-section-id">${ruleId}</span>
+            ${title ? `<span class="toc-section-title">${title}</span>` : ""}
+          </a>
+        `;
+      } catch (error) {
+        console.warn(`Failed to load section ${sectionNum}:`, error);
+      }
+    }
+
+    sectionsHtml += "</div>";
+    contentDiv.innerHTML = sectionsHtml;
+
+    // Add click handlers to section links
+    contentDiv.querySelectorAll(".toc-section-link").forEach((link) => {
       link.addEventListener("click", (e) => {
         e.preventDefault();
         const sectionNum = parseInt(link.getAttribute("data-section"));
@@ -1090,30 +1589,93 @@ async function loadTOC() {
       });
     });
   } catch (error) {
-    tocContent.innerHTML = `<p class="error">Failed to load Table of Contents: ${error.message}</p>`;
+    console.error("Failed to load chapter sections:", error);
+    contentDiv.innerHTML = '<p class="error">Failed to load sections</p>';
   }
 }
 
 function openTOC() {
   tocSidebar.classList.add("active");
+  sidebarBackdrop.classList.add("active");
   document.body.style.overflow = "hidden";
 }
 
 function closeTOC() {
   tocSidebar.classList.remove("active");
+  sidebarBackdrop.classList.remove("active");
   document.body.style.overflow = "auto";
 }
 
 // Word Index Functions
+async function buildWordIndexFromSections() {
+  console.log("Building word index from section frontmatter...");
+
+  const wordIndex = {};
+  let processedSections = 0;
+
+  // Build index from cached content as sections are loaded
+  for (const [sectionNum, markdown] of Object.entries(cachedContent)) {
+    const { metadata } = parseFrontmatter(markdown);
+    if (!metadata) continue;
+
+    // Extract word_index from metadata
+    if (metadata.word_index && Array.isArray(metadata.word_index)) {
+      metadata.word_index.forEach((word) => {
+        if (!wordIndex[word]) {
+          wordIndex[word] = [];
+        }
+        const secNum = parseInt(sectionNum);
+        if (!wordIndex[word].includes(secNum)) {
+          wordIndex[word].push(secNum);
+        }
+      });
+    }
+    processedSections++;
+  }
+
+  // Sort sections for each word
+  for (const word in wordIndex) {
+    wordIndex[word].sort((a, b) => a - b);
+  }
+
+  // Sort words alphabetically
+  const sortedWords = Object.keys(wordIndex).sort();
+  const sortedIndex = {};
+  for (const word of sortedWords) {
+    sortedIndex[word] = wordIndex[word];
+  }
+
+  wordIndexData = {
+    generated: new Date().toISOString(),
+    totalWords: Object.keys(sortedIndex).length,
+    index: sortedIndex,
+    sectionsProcessed: processedSections,
+  };
+
+  console.log(
+    `Word index built: ${wordIndexData.totalWords} words from ${processedSections} sections`,
+  );
+  return wordIndexData;
+}
+
 async function loadWordIndex() {
   try {
+    indexContent.innerHTML = '<div class="loading">Loading word index...</div>';
+
     const response = await fetch("data/word-index.json");
-    if (!response.ok) throw new Error("Failed to load word index");
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
     wordIndexData = await response.json();
-    console.log("Word index loaded:", wordIndexData.totalWords, "words");
+    console.log(
+      `Word index loaded: ${wordIndexData.totalWords} words from ${wordIndexData.sectionsProcessed} sections`,
+    );
+
     displayWordIndex();
   } catch (error) {
-    indexContent.innerHTML = `<p class="error">Failed to load word index: ${error.message}</p>`;
+    console.error("Error loading word index:", error);
+    indexContent.innerHTML = `<p class="loading">Error loading word index: ${error.message}</p>`;
   }
 }
 
@@ -1189,17 +1751,28 @@ function handleWordSearch(e) {
 }
 
 function openWordIndex() {
-  indexSidebar.classList.add("active");
+  if (indexSidebar) {
+    indexSidebar.classList.add("active");
+  }
+  if (sidebarBackdrop) {
+    sidebarBackdrop.classList.add("active");
+  }
   document.body.style.overflow = "hidden";
-  wordSearch.focus();
+
+  if (wordSearch) {
+    wordSearch.focus();
+  }
 }
 
 function closeWordIndex() {
-  console.log("Closing word index", indexSidebar);
   if (indexSidebar) {
     indexSidebar.classList.remove("active");
   }
+  if (sidebarBackdrop) {
+    sidebarBackdrop.classList.remove("active");
+  }
   document.body.style.overflow = "auto";
+
   if (wordSearch) {
     wordSearch.value = "";
   }
@@ -1208,47 +1781,150 @@ function closeWordIndex() {
   }
 }
 
+// Cross-reference Link Handlers
+function setupRefLinkHandlers() {
+  // Add click handlers to all cross-reference links
+  document.querySelectorAll(".ref-link").forEach((link) => {
+    link.addEventListener("click", (e) => {
+      e.preventDefault();
+      const sectionNum = parseInt(link.getAttribute("data-section"));
+      if (!isNaN(sectionNum)) {
+        displaySection(sectionNum);
+      }
+    });
+  });
+}
+
 // Image Viewer Functions
-function updateImage(sectionNum) {
-  // Get image path from frontmatter if available
-  const markdown = cachedContent[sectionNum];
-  if (!markdown) return;
-
-  const { frontmatter } = parseFrontmatter(markdown);
-  if (!frontmatter) return;
-
-  // Try to extract image path from frontmatter
-  const imageMatch = frontmatter.match(/image:\s*(.+)/);
-  if (imageMatch) {
-    const imagePath = imageMatch[1].trim();
-    pageImage.src = `assets${imagePath}`;
-  } else {
-    // Fallback: try to find corresponding image by section number
-    const paddedNum = String(sectionNum).padStart(3, "0");
-    pageImage.src = `assets/images/${paddedNum}.png`;
-  }
-
-  // Handle image load errors
-  pageImage.onerror = () => {
-    imageViewer.style.display = "none";
-    console.warn(`No image found for section ${sectionNum}`);
-  };
+function setupImageButtonHandlers() {
+  // Add click handlers to all image buttons
+  document.querySelectorAll(".section-image-btn").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const imagePath = btn.getAttribute("data-image");
+      if (imagePath) {
+        openLightbox(imagePath);
+      }
+    });
+  });
 }
 
-function toggleImage() {
-  if (imageViewer.style.display === "none") {
-    imageViewer.style.display = "block";
-    updateImage(currentSection);
-  } else {
-    imageViewer.style.display = "none";
+let currentImagePath = null;
+let currentImageMetadata = null;
+
+function openLightbox(imagePath) {
+  currentImagePath = imagePath;
+
+  // Get current section's metadata to access image_files list
+  const sectionElement = document.querySelector(".grammar-section");
+  if (sectionElement) {
+    const sectionNum = parseInt(sectionElement.getAttribute("data-section"));
+    // Store metadata for navigation
+    loadSection(sectionNum).then((markdown) => {
+      const { metadata } = parseFrontmatter(markdown);
+      currentImageMetadata = {
+        sectionNum,
+        imageFiles: metadata.image_files || [],
+        isAppendix: sectionNum > CORE_RULES_COUNT,
+      };
+      updateLightboxNavigation();
+    });
+  }
+
+  lightboxImage.src = imagePath;
+  imageLightbox.style.display = "flex";
+  document.body.style.overflow = "hidden";
+  updateLightboxNavigation();
+}
+
+function closeLightbox() {
+  imageLightbox.style.display = "none";
+  document.body.style.overflow = "auto";
+  currentImagePath = null;
+  currentImageMetadata = null;
+}
+
+function updateLightboxNavigation() {
+  if (!currentImageMetadata || !currentImagePath) {
+    if (lightboxPrevBtn) lightboxPrevBtn.disabled = true;
+    if (lightboxNextBtn) lightboxNextBtn.disabled = true;
+    return;
+  }
+
+  const { imageFiles, sectionNum, isAppendix } = currentImageMetadata;
+
+  // Find current image index in the image_files array
+  const currentFileName = currentImagePath.split("/").pop();
+  const currentIndex = imageFiles.indexOf(currentFileName);
+
+  if (currentIndex === -1) {
+    // Image not found in metadata, disable navigation
+    if (lightboxPrevBtn) lightboxPrevBtn.disabled = true;
+    if (lightboxNextBtn) lightboxNextBtn.disabled = true;
+    return;
+  }
+
+  // Enable/disable buttons based on position in array
+  if (lightboxPrevBtn) {
+    lightboxPrevBtn.disabled = currentIndex === 0;
+  }
+  if (lightboxNextBtn) {
+    lightboxNextBtn.disabled = currentIndex === imageFiles.length - 1;
   }
 }
+
+function navigateLightbox(direction) {
+  if (!currentImageMetadata || !currentImagePath) return;
+
+  const { imageFiles, sectionNum, isAppendix } = currentImageMetadata;
+  const baseDir = isAppendix ? "assets/images/appendix" : "assets/images/rules";
+
+  // Find current image index
+  const currentFileName = currentImagePath.split("/").pop();
+  const currentIndex = imageFiles.indexOf(currentFileName);
+
+  if (currentIndex === -1) return;
+
+  // Calculate new index
+  const newIndex = currentIndex + direction;
+
+  // Check bounds
+  if (newIndex < 0 || newIndex >= imageFiles.length) return;
+
+  // Navigate to new image
+  const newImagePath = `${baseDir}/${imageFiles[newIndex]}`;
+  currentImagePath = newImagePath;
+  lightboxImage.src = newImagePath;
+  updateLightboxNavigation();
+}
+
+// Event listeners for lightbox
+closeLightboxBtn?.addEventListener("click", closeLightbox);
+imageLightbox
+  ?.querySelector(".lightbox-backdrop")
+  ?.addEventListener("click", closeLightbox);
+
+lightboxPrevBtn?.addEventListener("click", () => navigateLightbox(-1));
+lightboxNextBtn?.addEventListener("click", () => navigateLightbox(1));
+
+// Keyboard navigation for lightbox
+document.addEventListener("keydown", (e) => {
+  if (imageLightbox.style.display === "flex") {
+    if (e.key === "Escape") {
+      closeLightbox();
+    } else if (e.key === "ArrowLeft") {
+      navigateLightbox(-1);
+    } else if (e.key === "ArrowRight") {
+      navigateLightbox(1);
+    }
+  }
+});
 
 // Initialize everything
 async function main() {
   await initShlesha();
   await loadChapters();
-  await loadWordIndex();
   initTheme();
   initScript();
   currentSection = getSectionFromUrl();

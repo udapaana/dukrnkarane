@@ -4,8 +4,13 @@
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>डुकृण्करणे | Vedic Sanskrit Grammar</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@300;400;500&family=Noto+Sans+Telugu:wght@300;400;500&display=swap"
+            rel="stylesheet"
+        />
         <link rel="stylesheet" href="assets/css/styles-new.css" />
-        <script type="module" src="assets/js/script.js"></script>
     </head>
     <body>
         <nav class="navigation">
@@ -33,7 +38,7 @@
                     id="toc-button"
                     class="control-button"
                     aria-label="Table of Contents"
-                    title="View Table of Contents"
+                    title="Table of Contents"
                 >
                     ☰
                 </button>
@@ -41,42 +46,38 @@
                     id="index-button"
                     class="control-button"
                     aria-label="Word Index"
-                    title="Search Devanagari words"
+                    title="Word Index"
                 >
                     🔍
                 </button>
                 <button
-                    id="image-toggle"
+                    id="edit-button"
                     class="control-button"
-                    aria-label="Toggle image"
-                    title="Show/hide original scanned page"
+                    aria-label="Suggest Edit"
+                    title="Suggest Edit"
                 >
-                    🖼
+                    ✎
                 </button>
                 <button
                     id="help-button"
                     class="control-button"
-                    aria-label="Markdown guide"
-                    title="View markdown specification"
+                    aria-label="Help"
+                    title="Markdown Help"
                 >
                     ?
                 </button>
-                <button
-                    id="edit-button"
-                    class="control-button"
-                    aria-label="Suggest edit"
-                    title="Suggest an edit to this section"
-                >
-                    ✎
-                </button>
                 <div class="script-selector">
-                    <button id="script-toggle" aria-label="Change script">
+                    <button
+                        id="script-toggle"
+                        aria-label="Change script"
+                        title="Toggle script"
+                    >
                         <span class="script-char iast" style="display: none"
-                            >ka</span
+                            >A</span
                         >
-                        <span class="script-char devanagari">क</span>
+                        <span class="script-char devanagari">अ</span>
                         <span class="script-char telugu" style="display: none"
-                            >క</span
+                            >అ</span
                         >
                         <span
                             class="script-char nandinagari"
@@ -86,25 +87,25 @@
                     </button>
                     <div id="script-menu" class="script-menu">
                         <button class="script-option iast" data-script="iast">
-                            ka - IAST
+                            IAST
                         </button>
                         <button
                             class="script-option devanagari"
                             data-script="devanagari"
                         >
-                            क - Devanagari
+                            देवनागरी
                         </button>
                         <button
                             class="script-option telugu"
                             data-script="telugu"
                         >
-                            క - Telugu
+                            తెలుగు
                         </button>
                         <button
                             class="script-option nandinagari"
                             data-script="nandinagari"
                         >
-                            𑦮 - Nandinagari
+                            𑦮 Nandinagari
                         </button>
                     </div>
                 </div>
@@ -112,11 +113,15 @@
                     id="theme-toggle"
                     class="control-button"
                     aria-label="Toggle theme"
+                    title="Toggle theme"
                 >
-                    ◐
+                    ☾
                 </button>
             </div>
         </nav>
+
+        <!-- Backdrop for sidebars -->
+        <div id="sidebar-backdrop" class="sidebar-backdrop"></div>
 
         <!-- TOC Sidebar -->
         <aside id="toc-sidebar" class="toc-sidebar">
@@ -153,14 +158,42 @@
             <article id="content" class="content">
                 <div class="loading">Loading...</div>
             </article>
-
-            <!-- Image Viewer -->
-            <aside id="image-viewer" class="image-viewer" style="display: none">
-                <div class="image-container">
-                    <img id="page-image" src="" alt="Scanned page" />
-                </div>
-            </aside>
         </main>
+
+        <!-- Image Lightbox -->
+        <div id="image-lightbox" class="image-lightbox" style="display: none">
+            <div class="lightbox-backdrop"></div>
+            <button
+                id="lightbox-prev"
+                class="lightbox-nav lightbox-prev"
+                title="Previous page (←)"
+            >
+                ‹
+            </button>
+            <button
+                id="lightbox-next"
+                class="lightbox-nav lightbox-next"
+                title="Next page (→)"
+            >
+                ›
+            </button>
+            <div class="lightbox-content">
+                <button id="close-lightbox" class="lightbox-close">
+                    &times;
+                </button>
+                <img id="lightbox-image" src="" alt="Scanned page" />
+            </div>
+        </div>
+
+        <!-- Floating Image Button -->
+        <button
+            id="view-image-btn"
+            class="floating-image-btn"
+            style="display: none"
+            title="View scanned page"
+        >
+            📄
+        </button>
 
         <!-- Help Modal -->
         <div id="help-modal" class="modal">
@@ -218,5 +251,6 @@
                 </div>
             </div>
         </div>
+        <script type="module" src="assets/js/script.js?v=13"></script>
     </body>
 </html>
