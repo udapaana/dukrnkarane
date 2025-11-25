@@ -5,7 +5,6 @@ import init, { WasmShlesha } from "../wasm/shlesha.js";
 const TOTAL_SECTIONS = 986; // 972 core rules + 14 appendix sections
 const MIN_SECTION = 1; // Start at section 1 (no section 0)
 const CORE_RULES_COUNT = 972; // Number of core rules
-const CONTENT_BASE_URL = "data/sections"; // Legacy constant for validation
 const CONTENT_BASE_URL_RULES = "data/rules";
 const CONTENT_BASE_URL_APPENDIX = "data/appendix";
 const CHAPTERS_URL = "data/chapters.json";

@@ -78,19 +78,27 @@ jobs:
             exit 1
           fi
 
-          # Check data/sections
-          if [ ! -d "data/sections" ]; then
-            echo "❌ Missing data/sections directory"
+          # Check data/rules (main grammar content)
+          if [ ! -d "data/rules" ]; then
+            echo "❌ Missing data/rules directory"
             exit 1
           fi
 
-          section_files=$(find data/sections -name "*.md" | wc -l)
-          echo "📄 Found $section_files section files"
+          section_files=$(find data/rules -name "*.md" | wc -l)
+          echo "📄 Found $section_files section files in data/rules"
 
           if [ "$section_files" -lt 900 ]; then
             echo "⚠️  Warning: Expected ~972 sections, found only $section_files"
           else
             echo "✅ Section count looks good ($section_files files)"
+          fi
+
+          # Check data/appendix
+          if [ ! -d "data/appendix" ]; then
+            echo "⚠️  Warning: Missing data/appendix directory"
+          else
+            appendix_files=$(find data/appendix -name "*.md" | wc -l)
+            echo "📄 Found $appendix_files appendix files"
           fi
 
       - name: Validate assets structure
@@ -109,8 +117,9 @@ jobs:
             exit 1
           fi
 
-          if ! grep -q 'CONTENT_BASE_URL = "data/sections"' assets/js/script.js; then
-            echo "❌ Content base URL not set to local path"
+          # Verify content base URLs point to actual directories
+          if ! grep -q 'CONTENT_BASE_URL_RULES = "data/rules"' assets/js/script.js; then
+            echo "❌ Content base URL for rules not set correctly"
             exit 1
           fi
 
