@@ -19,6 +19,9 @@
     --font-devanagari:
         "Noto Sans Devanagari", "Noto Sans Telugu", "Devanagari Sangam MN",
         "Kohinoor Telugu", -apple-system, system-ui, sans-serif;
+    --font-sanskrit-devanagari:
+        "Noto Sans Devanagari", "Noto Sans Telugu", "Devanagari Sangam MN",
+        "Kohinoor Telugu", -apple-system, system-ui, sans-serif;
     --font-mono: "SF Mono", "Consolas", "Monaco", monospace;
 
     /* Spacing */
