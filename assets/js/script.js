@@ -1088,13 +1088,15 @@ async function displaySingleSection(sectionNum) {
 // Update navigation
 function updateNavigation() {
   // Determine if we can go to prev/next chapter
-  if (currentChapter) {
-    const currentChapterNum = currentChapter.number;
-    prevButton.disabled = currentChapterNum <= 1;
-    nextButton.disabled = currentChapterNum >= chaptersData.length;
+  if (currentChapter && chaptersData) {
+    const currentIndex = chaptersData.findIndex(
+      (ch) => ch.number === currentChapter.number,
+    );
+    prevButton.disabled = currentIndex <= 0;
+    nextButton.disabled = currentIndex >= chaptersData.length - 1;
 
     const [start, end] = currentChapter.range;
-    sectionCounter.textContent = `Chapter ${currentChapterNum}: ${currentChapter.title} (§ ${start}–${end})`;
+    sectionCounter.textContent = `Chapter ${currentChapter.number}: ${currentChapter.title} (§ ${start}–${end})`;
   } else {
     // Fallback to section-based navigation
     prevButton.disabled = currentSection <= MIN_SECTION;
@@ -1106,10 +1108,12 @@ function updateNavigation() {
 // Navigation handlers
 function goToPrevious() {
   if (currentChapter && chaptersData) {
-    // Go to previous chapter
-    const prevChapterNum = currentChapter.number - 1;
-    if (prevChapterNum >= 1) {
-      const prevChapter = chaptersData[prevChapterNum - 1];
+    // Find current chapter index in array
+    const currentIndex = chaptersData.findIndex(
+      (ch) => ch.number === currentChapter.number,
+    );
+    if (currentIndex > 0) {
+      const prevChapter = chaptersData[currentIndex - 1];
       displayChapter(prevChapter);
     }
   } else if (currentSection > MIN_SECTION) {
@@ -1119,10 +1123,12 @@ function goToPrevious() {
 
 function goToNext() {
   if (currentChapter && chaptersData) {
-    // Go to next chapter
-    const nextChapterNum = currentChapter.number + 1;
-    if (nextChapterNum <= chaptersData.length) {
-      const nextChapter = chaptersData[nextChapterNum - 1];
+    // Find current chapter index in array
+    const currentIndex = chaptersData.findIndex(
+      (ch) => ch.number === currentChapter.number,
+    );
+    if (currentIndex < chaptersData.length - 1) {
+      const nextChapter = chaptersData[currentIndex + 1];
       displayChapter(nextChapter);
     }
   } else if (currentSection < TOTAL_SECTIONS) {
