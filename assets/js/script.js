@@ -1087,51 +1087,25 @@ async function displaySingleSection(sectionNum) {
 
 // Update navigation
 function updateNavigation() {
-  // Determine if we can go to prev/next chapter
-  if (currentChapter && chaptersData) {
-    const currentIndex = chaptersData.findIndex(
-      (ch) => ch.number === currentChapter.number,
-    );
-    prevButton.disabled = currentIndex <= 0;
-    nextButton.disabled = currentIndex >= chaptersData.length - 1;
+  prevButton.disabled = currentSection <= MIN_SECTION;
+  nextButton.disabled = currentSection >= TOTAL_SECTIONS;
 
-    const [start, end] = currentChapter.range;
-    sectionCounter.textContent = `Chapter ${currentChapter.number}: ${currentChapter.title} (§ ${start}–${end})`;
+  if (currentChapter) {
+    sectionCounter.textContent = `§ ${currentSection} — ${currentChapter.title}`;
   } else {
-    // Fallback to section-based navigation
-    prevButton.disabled = currentSection <= MIN_SECTION;
-    nextButton.disabled = currentSection >= TOTAL_SECTIONS;
-    sectionCounter.textContent = `§ ${currentSection} of ${TOTAL_SECTIONS}`;
+    sectionCounter.textContent = `§ ${currentSection}`;
   }
 }
 
 // Navigation handlers
 function goToPrevious() {
-  if (currentChapter && chaptersData) {
-    // Find current chapter index in array
-    const currentIndex = chaptersData.findIndex(
-      (ch) => ch.number === currentChapter.number,
-    );
-    if (currentIndex > 0) {
-      const prevChapter = chaptersData[currentIndex - 1];
-      displayChapter(prevChapter);
-    }
-  } else if (currentSection > MIN_SECTION) {
+  if (currentSection > MIN_SECTION) {
     displaySection(currentSection - 1);
   }
 }
 
 function goToNext() {
-  if (currentChapter && chaptersData) {
-    // Find current chapter index in array
-    const currentIndex = chaptersData.findIndex(
-      (ch) => ch.number === currentChapter.number,
-    );
-    if (currentIndex < chaptersData.length - 1) {
-      const nextChapter = chaptersData[currentIndex + 1];
-      displayChapter(nextChapter);
-    }
-  } else if (currentSection < TOTAL_SECTIONS) {
+  if (currentSection < TOTAL_SECTIONS) {
     displaySection(currentSection + 1);
   }
 }
