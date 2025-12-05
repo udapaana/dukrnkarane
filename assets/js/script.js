@@ -3,7 +3,7 @@ import init, { WasmShlesha } from "../wasm/shlesha.js";
 
 // Configuration
 const TOTAL_SECTIONS = 986; // 972 core rules + 14 appendix sections
-const MIN_SECTION = 1; // Start at section 1 (no section 0)
+const MIN_SECTION = 0; // Start at section 0 (Preface)
 const CORE_RULES_COUNT = 972; // Number of core rules
 const CONTENT_BASE_URL_RULES = "data/rules";
 const CONTENT_BASE_URL_APPENDIX = "data/appendix";
@@ -849,13 +849,63 @@ function parseTableLines(lines) {
 </table>`;
 }
 
+// Render a single section's HTML
+function renderSectionHtml(sectionNum, markdown) {
+  const { metadata, markdown: contentMarkdown } = parseFrontmatter(markdown);
+
+  // Process and parse
+  let processedMarkdown = processSanskritMarkers(contentMarkdown);
+  processedMarkdown = processCrossReferences(processedMarkdown);
+  const html = parseMarkdown(processedMarkdown);
+
+  // Build section header with title
+  const ruleId = metadata.rule_id || `§ ${sectionNum}`;
+  const title = metadata.title || "";
+  const sectionTitle = title ? `${ruleId}: ${title}` : ruleId;
+
+  // Check if image exists for this section
+  let imageButton = "";
+  const imagePath = getImagePath(sectionNum, metadata);
+  if (imagePath) {
+    imageButton = `<button class="section-image-btn" data-image="${imagePath}" title="View scanned page">📄</button>`;
+  }
+
+  // Edit button for this section
+  const editButton = `<button class="section-edit-btn" data-section="${sectionNum}" title="Suggest edit">✎</button>`;
+
+  // Build topics tags
+  let topicsTags = "";
+  if (
+    metadata.topics &&
+    Array.isArray(metadata.topics) &&
+    metadata.topics.length > 0
+  ) {
+    topicsTags = `<div class="topics-tags">${metadata.topics
+      .map((topic) => `<span class="topic-tag">${topic}</span>`)
+      .join("")}</div>`;
+  }
+
+  return `
+    <section id="s-${sectionNum}" class="grammar-section" data-section="${sectionNum}">
+      <div class="section-header">
+        <div class="section-anchor">
+          <a href="#s-${sectionNum}" class="section-link">${sectionTitle}</a>
+          ${imageButton}
+          ${editButton}
+        </div>
+        ${topicsTags}
+      </div>
+      ${html}
+    </section>
+  `;
+}
+
 // Display chapter (multiple sections)
 async function displayChapter(chapter, scrollToSection = null) {
   contentElement.innerHTML = '<div class="loading">Loading chapter...</div>';
 
   try {
     const [start, end] = chapter.range;
-    const sections = [];
 
     // Chapter header
     let chapterHtml = `
@@ -865,72 +915,39 @@ async function displayChapter(chapter, scrollToSection = null) {
       </div>
     `;
 
-    // Load all sections in the chapter
+    // Build array of section numbers
+    const sectionNums = [];
     for (let i = start; i <= end; i++) {
-      try {
-        const markdown = await loadSection(i);
-        const { metadata, markdown: contentMarkdown } =
-          parseFrontmatter(markdown);
-
-        // Process and parse
-        let processedMarkdown = processSanskritMarkers(contentMarkdown);
-        processedMarkdown = processCrossReferences(processedMarkdown);
-        const html = parseMarkdown(processedMarkdown);
-
-        // Build section header with title
-        const ruleId = metadata.rule_id || `§ ${i}`;
-        const title = metadata.title || "";
-        const sectionTitle = title ? `${ruleId}: ${title}` : ruleId;
-
-        // Check if image exists for this section
-        let imageButton = "";
-        const imagePath = getImagePath(i, metadata);
-        if (imagePath) {
-          imageButton = `<button class="section-image-btn" data-image="${imagePath}" title="View scanned page">📄</button>`;
-        }
-
-        // Edit button for this section
-        const editButton = `<button class="section-edit-btn" data-section="${i}" title="Suggest edit">✎</button>`;
-
-        // Build topics tags
-        let topicsTags = "";
-        if (
-          metadata.topics &&
-          Array.isArray(metadata.topics) &&
-          metadata.topics.length > 0
-        ) {
-          topicsTags = `<div class="topics-tags">${metadata.topics
-            .map((topic) => `<span class="topic-tag">${topic}</span>`)
-            .join("")}</div>`;
-        }
-
-        // Wrap each section with an anchor
-        sections.push(`
-          <section id="s-${i}" class="grammar-section" data-section="${i}">
-            <div class="section-header">
-              <div class="section-anchor">
-                <a href="#s-${i}" class="section-link">${sectionTitle}</a>
-                ${imageButton}
-                ${editButton}
-              </div>
-              ${topicsTags}
-            </div>
-            ${html}
-          </section>
-        `);
-      } catch (error) {
-        console.warn(`Section ${i} not found:`, error);
-        // Add placeholder for missing sections
-        sections.push(`
-          <section id="s-${i}" class="grammar-section missing" data-section="${i}">
-            <div class="section-anchor">
-              <a href="#s-${i}" class="section-link">§ ${i}</a>
-            </div>
-            <p class="missing-notice">Section ${i} not available</p>
-          </section>
-        `);
-      }
+      sectionNums.push(i);
     }
+
+    // Load all sections in parallel
+    const sectionPromises = sectionNums.map(async (sectionNum) => {
+      try {
+        const markdown = await loadSection(sectionNum);
+        return { sectionNum, markdown, error: null };
+      } catch (error) {
+        console.warn(`Section ${sectionNum} not found:`, error);
+        return { sectionNum, markdown: null, error };
+      }
+    });
+
+    const sectionResults = await Promise.all(sectionPromises);
+
+    // Render sections in order
+    const sections = sectionResults.map(({ sectionNum, markdown, error }) => {
+      if (error || !markdown) {
+        return `
+          <section id="s-${sectionNum}" class="grammar-section missing" data-section="${sectionNum}">
+            <div class="section-anchor">
+              <a href="#s-${sectionNum}" class="section-link">§ ${sectionNum}</a>
+            </div>
+            <p class="missing-notice">Section ${sectionNum} not available</p>
+          </section>
+        `;
+      }
+      return renderSectionHtml(sectionNum, markdown);
+    });
 
     chapterHtml += sections.join("\n");
     contentElement.innerHTML = chapterHtml;
@@ -1612,26 +1629,41 @@ async function loadChapterSections(chapterNum, contentDiv) {
     if (!chapter) return;
 
     const [start, end] = chapter.range;
-    let sectionsHtml = '<div class="toc-sections">';
 
-    // Load section metadata for each section in the chapter
-    for (let sectionNum = start; sectionNum <= end; sectionNum++) {
+    // Build array of section numbers
+    const sectionNums = [];
+    for (let i = start; i <= end; i++) {
+      sectionNums.push(i);
+    }
+
+    // Load all section metadata in parallel
+    const sectionPromises = sectionNums.map(async (sectionNum) => {
       try {
         const markdown = await loadSection(sectionNum);
         const { metadata } = parseFrontmatter(markdown);
-
-        const ruleId = metadata.rule_id || `§ ${sectionNum}`;
-        const title = metadata.title || "";
-
-        sectionsHtml += `
-          <a href="#" class="toc-section-link" data-section="${sectionNum}">
-            <span class="toc-section-id">${ruleId}</span>
-            ${title ? `<span class="toc-section-title">${title}</span>` : ""}
-          </a>
-        `;
+        return { sectionNum, metadata, error: null };
       } catch (error) {
         console.warn(`Failed to load section ${sectionNum}:`, error);
+        return { sectionNum, metadata: null, error };
       }
+    });
+
+    const sectionResults = await Promise.all(sectionPromises);
+
+    // Build HTML in order
+    let sectionsHtml = '<div class="toc-sections">';
+    for (const { sectionNum, metadata, error } of sectionResults) {
+      if (error || !metadata) continue;
+
+      const ruleId = metadata.rule_id || `§ ${sectionNum}`;
+      const title = metadata.title || "";
+
+      sectionsHtml += `
+        <a href="#" class="toc-section-link" data-section="${sectionNum}">
+          <span class="toc-section-id">${ruleId}</span>
+          ${title ? `<span class="toc-section-title">${title}</span>` : ""}
+        </a>
+      `;
     }
 
     sectionsHtml += "</div>";
@@ -2009,13 +2041,21 @@ document.addEventListener("keydown", (e) => {
 
 // Initialize everything
 async function main() {
-  await initShlesha();
-  await loadChapters();
+  // Initialize theme/script immediately (no async)
   initTheme();
   initScript();
+
+  // Load WASM and chapters in parallel
+  await Promise.all([initShlesha(), loadChapters()]);
+
+  // Display initial section
   currentSection = getSectionFromUrl();
   await displaySection(currentSection);
-  await loadTOC();
+
+  // Load TOC in background (don't block)
+  loadTOC();
+
+  // Preload adjacent sections after a delay
   setTimeout(preloadAdjacentSections, 1000);
 }
 

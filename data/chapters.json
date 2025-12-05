@@ -1,12 +1,15 @@
 {
   "chapters": [
     {
+      "number": 0,
+      "title": "Preface",
+      "range": [0, 0],
+      "topics": ["attribution", "author", "source", "acknowledgment"]
+    },
+    {
       "number": 1,
       "title": "The Alphabet",
-      "range": [
-        1,
-        17
-      ],
+      "range": [1, 17],
       "topics": [
         "accents",
         "aksara",
@@ -85,10 +88,7 @@
     {
       "number": 2,
       "title": "Euphonic Combination (Sandhi)",
-      "range": [
-        18,
-        33
-      ],
+      "range": [18, 33],
       "topics": [
         "anusvara",
         "aspiration",
@@ -143,24 +143,13 @@
     {
       "number": 3,
       "title": "The Alphabet",
-      "range": [
-        34,
-        34
-      ],
-      "topics": [
-        "consonants",
-        "devoicing",
-        "final-consonants",
-        "pausa"
-      ]
+      "range": [34, 34],
+      "topics": ["consonants", "devoicing", "final-consonants", "pausa"]
     },
     {
       "number": 4,
       "title": "Euphonic Combination (Sandhi)",
-      "range": [
-        35,
-        50
-      ],
+      "range": [35, 50],
       "topics": [
         "aa-sandhi",
         "anusvara",
@@ -202,10 +191,7 @@
     {
       "number": 5,
       "title": "Declension of Nouns",
-      "range": [
-        51,
-        130
-      ],
+      "range": [51, 130],
       "topics": [
         "a-stems",
         "aa-shortening",
@@ -362,10 +348,7 @@
     {
       "number": 6,
       "title": "Pronouns and Their Declension",
-      "range": [
-        131,
-        158
-      ],
+      "range": [131, 158],
       "topics": [
         "accentuation",
         "adverbs",
@@ -404,10 +387,7 @@
     {
       "number": 7,
       "title": "Numerals and Their Declension",
-      "range": [
-        159,
-        170
-      ],
+      "range": [159, 170],
       "topics": [
         "adverbs",
         "affixes",
@@ -432,10 +412,7 @@
     {
       "number": 8,
       "title": "Degree of Comparison",
-      "range": [
-        171,
-        178
-      ],
+      "range": [171, 178],
       "topics": [
         "adverbs",
         "affixes",
@@ -455,10 +432,7 @@
     {
       "number": 9,
       "title": "Compounds",
-      "range": [
-        179,
-        267
-      ],
+      "range": [179, 267],
       "topics": [
         "ablative",
         "accusative",
@@ -545,10 +519,7 @@
     {
       "number": 10,
       "title": "Avyayībhāva Compounds",
-      "range": [
-        268,
-        279
-      ],
+      "range": [268, 279],
       "topics": [
         "avyayībhāva",
         "cases",
@@ -568,24 +539,13 @@
     {
       "number": 11,
       "title": "General Rules for Compounds",
-      "range": [
-        280,
-        285
-      ],
-      "topics": [
-        "compounds",
-        "general rules",
-        "irregular",
-        "phonology"
-      ]
+      "range": [280, 285],
+      "topics": ["compounds", "general rules", "irregular", "phonology"]
     },
     {
       "number": 12,
       "title": "Other Changes for Compounds",
-      "range": [
-        286,
-        304
-      ],
+      "range": [286, 304],
       "topics": [
         "augment",
         "cerebralization",
@@ -600,10 +560,7 @@
     {
       "number": 13,
       "title": "Formation of Feminine Bases",
-      "range": [
-        305,
-        336
-      ],
+      "range": [305, 336],
       "topics": [
         "accent",
         "adjectives",
@@ -631,10 +588,7 @@
     {
       "number": 14,
       "title": "Secondary Nominal Bases",
-      "range": [
-        337,
-        343
-      ],
+      "range": [337, 343],
       "topics": [
         "adverbs",
         "affixes",
@@ -655,10 +609,7 @@
     {
       "number": 15,
       "title": "Gender",
-      "range": [
-        344,
-        359
-      ],
+      "range": [344, 359],
       "topics": [
         "affixes",
         "feminine",
@@ -680,10 +631,7 @@
     {
       "number": 16,
       "title": "Gender and Avyayas",
-      "range": [
-        360,
-        360
-      ],
+      "range": [360, 360],
       "topics": [
         "adverbs",
         "avyayas",
@@ -701,37 +649,19 @@
     {
       "number": 17,
       "title": "Gender",
-      "range": [
-        361,
-        361
-      ],
-      "topics": [
-        "feminine",
-        "gender",
-        "neuter",
-        "word list"
-      ]
+      "range": [361, 361],
+      "topics": ["feminine", "gender", "neuter", "word list"]
     },
     {
       "number": 18,
       "title": "Avyayas",
-      "range": [
-        362,
-        362
-      ],
-      "topics": [
-        "avyayas",
-        "grammar",
-        "indeclinables"
-      ]
+      "range": [362, 362],
+      "topics": ["avyayas", "grammar", "indeclinables"]
     },
     {
       "number": 19,
       "title": "Gender and Avyayas",
-      "range": [
-        363,
-        377
-      ],
+      "range": [363, 377],
       "topics": [
         "adverb-list",
         "adverbs",
@@ -778,10 +708,7 @@
     {
       "number": 20,
       "title": "Verbs",
-      "range": [
-        378,
-        480
-      ],
+      "range": [378, 480],
       "topics": [
         "adadi",
         "adadi class",
@@ -893,10 +820,7 @@
     {
       "number": 21,
       "title": "Conjugation of Secondary Conjugations",
-      "range": [
-        481,
-        510
-      ],
+      "range": [481, 510],
       "topics": [
         "a-ending-roots",
         "anit-roots",
@@ -949,10 +873,7 @@
     {
       "number": 22,
       "title": "Conjugation of Verbs",
-      "range": [
-        511,
-        580
-      ],
+      "range": [511, 580],
       "topics": [
         "alternative-forms",
         "anit-roots",
@@ -1040,10 +961,7 @@
     {
       "number": 23,
       "title": "Formation of Nouns",
-      "range": [
-        581,
-        603
-      ],
+      "range": [581, 603],
       "topics": [
         "aorist",
         "atmanepada",
@@ -1108,10 +1026,7 @@
     {
       "number": 24,
       "title": "Formation of Participles and Gerunds",
-      "range": [
-        604,
-        680
-      ],
+      "range": [604, 680],
       "topics": [
         "adoring",
         "age",
@@ -1253,10 +1168,7 @@
     {
       "number": 25,
       "title": "Participles",
-      "range": [
-        681,
-        777
-      ],
+      "range": [681, 777],
       "topics": [
         "10th class",
         "8th class",
@@ -1376,10 +1288,7 @@
     {
       "number": 26,
       "title": "Syntax",
-      "range": [
-        778,
-        972
-      ],
+      "range": [778, 972],
       "topics": [
         "Sanskrit vs Latin/Greek",
         "ability",
