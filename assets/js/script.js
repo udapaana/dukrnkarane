@@ -1276,9 +1276,9 @@ const CORRECTIONS_API = "https://dukrnkarane-corrections.udapaana.workers.dev";
 
 async function createGitHubIssue() {
   // Get the section being edited (from attribute or fallback to currentSection)
+  const editingSectionAttr = editTextarea.getAttribute("data-editing-section");
   const editingSection =
-    parseInt(editTextarea.getAttribute("data-editing-section")) ||
-    currentSection;
+    editingSectionAttr !== null ? parseInt(editingSectionAttr) : currentSection;
   const originalMarkdown = cachedContent[editingSection];
   const editedMarkdown = editTextarea.value;
 
