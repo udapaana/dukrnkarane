@@ -1,256 +1,222 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>डुकृण्करणे | Vedic Sanskrit Grammar</title>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-        <link
-            href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@300;400;500&family=Noto+Sans+Telugu:wght@300;400;500&display=swap"
-            rel="stylesheet"
-        />
-        <link rel="stylesheet" href="assets/css/styles.css" />
-    </head>
-    <body>
-        <nav class="navigation">
-            <div class="nav-center">
-                <button
-                    id="prev-btn"
-                    class="nav-button"
-                    aria-label="Previous section"
-                >
-                    ←
-                </button>
-                <span id="section-counter" class="section-counter"
-                    >Section 1 of 972</span
-                >
-                <button
-                    id="next-btn"
-                    class="nav-button"
-                    aria-label="Next section"
-                >
-                    →
-                </button>
-            </div>
-            <div class="nav-controls">
-                <button
-                    id="toc-button"
-                    class="control-button"
-                    aria-label="Table of Contents"
-                    title="Table of Contents"
-                >
-                    ☰
-                </button>
-                <button
-                    id="index-button"
-                    class="control-button"
-                    aria-label="Word Index"
-                    title="Word Index"
-                >
-                    🔍
-                </button>
-                <button
-                    id="edit-button"
-                    class="control-button"
-                    aria-label="Suggest Edit"
-                    title="Suggest Edit"
-                >
-                    ✎
-                </button>
-                <button
-                    id="help-button"
-                    class="control-button"
-                    aria-label="Help"
-                    title="Markdown Help"
-                >
-                    ?
-                </button>
-                <div class="script-selector">
-                    <button
-                        id="script-toggle"
-                        aria-label="Change script"
-                        title="Toggle script"
-                    >
-                        <span class="script-char iast" style="display: none"
-                            >A</span
-                        >
-                        <span class="script-char devanagari">अ</span>
-                        <span class="script-char telugu" style="display: none"
-                            >అ</span
-                        >
-                        <span
-                            class="script-char nandinagari"
-                            style="display: none"
-                            >𑦮</span
-                        >
-                    </button>
-                    <div id="script-menu" class="script-menu">
-                        <button class="script-option iast" data-script="iast">
-                            IAST
-                        </button>
-                        <button
-                            class="script-option devanagari"
-                            data-script="devanagari"
-                        >
-                            देवनागरी
-                        </button>
-                        <button
-                            class="script-option telugu"
-                            data-script="telugu"
-                        >
-                            తెలుగు
-                        </button>
-                        <button
-                            class="script-option nandinagari"
-                            data-script="nandinagari"
-                        >
-                            𑦮 Nandinagari
-                        </button>
-                    </div>
-                </div>
-                <button
-                    id="theme-toggle"
-                    class="control-button"
-                    aria-label="Toggle theme"
-                    title="Toggle theme"
-                >
-                    ☾
-                </button>
-            </div>
-        </nav>
-
-        <!-- Backdrop for sidebars -->
-        <div id="sidebar-backdrop" class="sidebar-backdrop"></div>
-
-        <!-- TOC Sidebar -->
-        <aside id="toc-sidebar" class="toc-sidebar">
-            <div class="toc-header">
-                <h2>Table of Contents</h2>
-                <button id="close-toc" class="close-button">&times;</button>
-            </div>
-            <div id="toc-content" class="toc-content">
-                <div class="loading">Loading...</div>
-            </div>
-        </aside>
-
-        <!-- Word Index Sidebar -->
-        <aside id="index-sidebar" class="toc-sidebar">
-            <div class="toc-header">
-                <h2>Word Index</h2>
-                <button id="close-index" class="close-button">&times;</button>
-            </div>
-            <div class="index-search">
-                <input
-                    type="text"
-                    id="word-search"
-                    placeholder="Search Devanagari words..."
-                    autocomplete="off"
-                />
-                <div id="search-stats" class="search-stats"></div>
-            </div>
-            <div id="index-content" class="toc-content">
-                <div class="loading">Loading...</div>
-            </div>
-        </aside>
-
-        <main class="content-container">
-            <article id="content" class="content">
-                <div class="loading">Loading...</div>
-            </article>
-        </main>
-
-        <!-- Image Lightbox -->
-        <div id="image-lightbox" class="image-lightbox" style="display: none">
-            <div class="lightbox-backdrop"></div>
-            <button
-                id="lightbox-prev"
-                class="lightbox-nav lightbox-prev"
-                title="Previous page (←)"
-            >
-                ‹
-            </button>
-            <button
-                id="lightbox-next"
-                class="lightbox-nav lightbox-next"
-                title="Next page (→)"
-            >
-                ›
-            </button>
-            <div class="lightbox-content">
-                <button id="close-lightbox" class="lightbox-close">
-                    &times;
-                </button>
-                <img id="lightbox-image" src="" alt="Scanned page" />
-            </div>
-        </div>
-
-        <!-- Floating Image Button -->
-        <button
-            id="view-image-btn"
-            class="floating-image-btn"
-            style="display: none"
-            title="View scanned page"
-        >
-            📄
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>डुकृण्करणे | Vedic Sanskrit Grammar</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@300;400;500&family=Noto+Sans+Telugu:wght@300;400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="assets/css/styles.css" />
+  </head>
+  <body>
+    <nav class="navigation">
+      <div class="nav-center">
+        <button id="prev-btn" class="nav-button" aria-label="Previous section">
+          ←
         </button>
-
-        <!-- Help Modal -->
-        <div id="help-modal" class="modal">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h2>Markdown Specification</h2>
-                    <button id="close-help-modal" class="close-button">
-                        &times;
-                    </button>
-                </div>
-                <div class="modal-body">
-                    <div id="help-content" class="help-content">
-                        <div class="loading">Loading...</div>
-                    </div>
-                </div>
-            </div>
+        <span id="section-counter" class="section-counter"
+          >Section 1 of 972</span
+        >
+        <button id="next-btn" class="nav-button" aria-label="Next section">
+          →
+        </button>
+      </div>
+      <div class="nav-controls">
+        <button
+          id="toc-button"
+          class="control-button"
+          aria-label="Table of Contents"
+          title="Table of Contents"
+        >
+          ☰
+        </button>
+        <button
+          id="index-button"
+          class="control-button"
+          aria-label="Word Index"
+          title="Word Index"
+        >
+          🔍
+        </button>
+        <button
+          id="edit-button"
+          class="control-button"
+          aria-label="Suggest Edit"
+          title="Suggest Edit"
+        >
+          ✎
+        </button>
+        <button
+          id="help-button"
+          class="control-button"
+          aria-label="Help"
+          title="Markdown Help"
+        >
+          ?
+        </button>
+        <div class="script-selector">
+          <button
+            id="script-toggle"
+            aria-label="Change script"
+            title="Toggle script"
+          >
+            <span class="script-char iast" style="display: none">A</span>
+            <span class="script-char devanagari">अ</span>
+            <span class="script-char telugu" style="display: none">అ</span>
+            <span class="script-char nandinagari" style="display: none">𑦮</span>
+          </button>
+          <div id="script-menu" class="script-menu">
+            <button class="script-option iast" data-script="iast">IAST</button>
+            <button class="script-option devanagari" data-script="devanagari">
+              देवनागरी
+            </button>
+            <button class="script-option telugu" data-script="telugu">
+              తెలుగు
+            </button>
+            <button class="script-option nandinagari" data-script="nandinagari">
+              𑦮 Nandinagari
+            </button>
+          </div>
         </div>
+        <button
+          id="theme-toggle"
+          class="control-button"
+          aria-label="Toggle theme"
+          title="Toggle theme"
+        >
+          ☾
+        </button>
+      </div>
+    </nav>
 
-        <!-- Edit Modal -->
-        <div id="edit-modal" class="modal">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h2>Suggest an Edit</h2>
-                    <button id="close-modal" class="close-button">
-                        &times;
-                    </button>
-                </div>
-                <div class="modal-body">
-                    <p class="modal-instructions">
-                        Edit the markdown below. Your changes will be used to
-                        create a GitHub issue suggesting improvements to this
-                        section.
-                    </p>
-                    <textarea
-                        id="edit-textarea"
-                        class="edit-textarea"
-                        spellcheck="false"
-                    ></textarea>
-                    <div class="modal-actions">
-                        <button id="preview-changes" class="secondary-button">
-                            Preview Changes
-                        </button>
-                        <button id="create-issue" class="primary-button">
-                            Create GitHub Issue
-                        </button>
-                    </div>
-                    <div
-                        id="preview-container"
-                        class="preview-container"
-                        style="display: none"
-                    >
-                        <h3>Preview</h3>
-                        <div id="preview-content" class="preview-content"></div>
-                    </div>
-                </div>
-            </div>
+    <!-- Backdrop for sidebars -->
+    <div id="sidebar-backdrop" class="sidebar-backdrop"></div>
+
+    <!-- TOC Sidebar -->
+    <aside id="toc-sidebar" class="toc-sidebar">
+      <div class="toc-header">
+        <h2>Table of Contents</h2>
+        <button id="close-toc" class="close-button">&times;</button>
+      </div>
+      <div id="toc-content" class="toc-content">
+        <div class="loading">Loading...</div>
+      </div>
+    </aside>
+
+    <!-- Word Index Sidebar -->
+    <aside id="index-sidebar" class="toc-sidebar">
+      <div class="toc-header">
+        <h2>Word Index</h2>
+        <button id="close-index" class="close-button">&times;</button>
+      </div>
+      <div class="index-search">
+        <input
+          type="text"
+          id="word-search"
+          placeholder="Search Devanagari words..."
+          autocomplete="off"
+        />
+        <div id="search-stats" class="search-stats"></div>
+      </div>
+      <div id="index-content" class="toc-content">
+        <div class="loading">Loading...</div>
+      </div>
+    </aside>
+
+    <main class="content-container">
+      <article id="content" class="content">
+        <div class="loading">Loading...</div>
+      </article>
+    </main>
+
+    <!-- Image Lightbox -->
+    <div id="image-lightbox" class="image-lightbox" style="display: none">
+      <div class="lightbox-backdrop"></div>
+      <button
+        id="lightbox-prev"
+        class="lightbox-nav lightbox-prev"
+        title="Previous page (←)"
+      >
+        ‹
+      </button>
+      <button
+        id="lightbox-next"
+        class="lightbox-nav lightbox-next"
+        title="Next page (→)"
+      >
+        ›
+      </button>
+      <div class="lightbox-content">
+        <button id="close-lightbox" class="lightbox-close">&times;</button>
+        <img id="lightbox-image" src="" alt="Scanned page" />
+      </div>
+    </div>
+
+    <!-- Floating Image Button -->
+    <button
+      id="view-image-btn"
+      class="floating-image-btn"
+      style="display: none"
+      title="View scanned page"
+    >
+      📄
+    </button>
+
+    <!-- Help Modal -->
+    <div id="help-modal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Markdown Specification</h2>
+          <button id="close-help-modal" class="close-button">&times;</button>
         </div>
-        <script type="module" src="assets/js/script.js?v=13"></script>
-    </body>
+        <div class="modal-body">
+          <div id="help-content" class="help-content">
+            <div class="loading">Loading...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div id="edit-modal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Suggest an Edit</h2>
+          <button id="close-modal" class="close-button">&times;</button>
+        </div>
+        <div class="modal-body">
+          <p class="modal-instructions">
+            Edit the markdown below. Your changes will be used to create a
+            GitHub issue suggesting improvements to this section.
+          </p>
+          <textarea
+            id="edit-textarea"
+            class="edit-textarea"
+            spellcheck="false"
+          ></textarea>
+          <div class="modal-actions">
+            <button id="preview-changes" class="secondary-button">
+              Preview Changes
+            </button>
+            <button id="create-issue" class="primary-button">
+              Submit Correction
+            </button>
+          </div>
+          <div
+            id="preview-container"
+            class="preview-container"
+            style="display: none"
+          >
+            <h3>Preview</h3>
+            <div id="preview-content" class="preview-content"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script type="module" src="assets/js/script.js?v=13"></script>
+  </body>
 </html>

@@ -1244,7 +1244,10 @@ function transliteratePreviewContent() {
     });
 }
 
-function createGitHubIssue() {
+// Corrections API endpoint
+const CORRECTIONS_API = "https://dukrnkarane-corrections.udapaana.workers.dev";
+
+async function createGitHubIssue() {
   const originalMarkdown = cachedContent[currentSection];
   const editedMarkdown = editTextarea.value;
 
@@ -1253,26 +1256,52 @@ function createGitHubIssue() {
     return;
   }
 
-  const paddedNum = String(currentSection).padStart(3, "0");
-  const fileName = `${paddedNum}.md`;
+  // Disable the button and show loading state
+  createIssueBtn.disabled = true;
+  createIssueBtn.textContent = "Submitting...";
 
-  // Just copy the edited markdown to clipboard
-  copyToClipboard(editedMarkdown);
+  try {
+    const isAppendix = currentSection > CORE_RULES_COUNT;
 
-  // Simple alert
-  alert(
-    `✅ Edited content copied to clipboard!\n\n` +
-      `A new GitHub issue will open.\n` +
-      `Just paste (Ctrl+V or Cmd+V) your edit and submit.`,
-  );
+    const response = await fetch(CORRECTIONS_API, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        section: currentSection,
+        content: editedMarkdown,
+        isAppendix: isAppendix,
+      }),
+    });
 
-  // Open new issue page with title pre-filled
-  const issueTitle = `Edit suggestion for §${currentSection} (${fileName})`;
-  const newIssueUrl = `https://github.com/udapaana/vyakarana/issues/new?title=${encodeURIComponent(issueTitle)}`;
-  window.open(newIssueUrl, "_blank");
+    const result = await response.json();
 
-  // Close the modal
-  closeEditModal();
+    if (!response.ok) {
+      throw new Error(result.error || "Failed to submit correction");
+    }
+
+    // Success - show PR link
+    alert(
+      `✅ Correction submitted!\n\n` +
+        `A pull request has been created:\n` +
+        `PR #${result.prNumber}\n\n` +
+        `Click OK to view the PR.`,
+    );
+
+    window.open(result.prUrl, "_blank");
+    closeEditModal();
+  } catch (error) {
+    console.error("Correction submission failed:", error);
+    alert(
+      `❌ Failed to submit correction:\n${error.message}\n\n` +
+        `Please try again or create an issue manually.`,
+    );
+  } finally {
+    // Reset button state
+    createIssueBtn.disabled = false;
+    createIssueBtn.textContent = "Submit Correction";
+  }
 }
 
 // Compute a summary of changes

@@ -1,0 +1,8 @@
+name = "dukrnkarane-corrections"
+main = "src/index.js"
+compatibility_date = "2024-01-01"
+
+[vars]
+REPO_OWNER = "udapaana"
+REPO_NAME = "dukrnkarane"
+ALLOWED_ORIGIN = "https://dukrnkarane.udapaana.in"
