@@ -889,6 +889,9 @@ async function displayChapter(chapter, scrollToSection = null) {
           imageButton = `<button class="section-image-btn" data-image="${imagePath}" title="View scanned page">📄</button>`;
         }
 
+        // Edit button for this section
+        const editButton = `<button class="section-edit-btn" data-section="${i}" title="Suggest edit">✎</button>`;
+
         // Build topics tags
         let topicsTags = "";
         if (
@@ -908,6 +911,7 @@ async function displayChapter(chapter, scrollToSection = null) {
               <div class="section-anchor">
                 <a href="#s-${i}" class="section-link">${sectionTitle}</a>
                 ${imageButton}
+                ${editButton}
               </div>
               ${topicsTags}
             </div>
@@ -938,9 +942,10 @@ async function displayChapter(chapter, scrollToSection = null) {
     currentSection = scrollToSection || start;
     updateNavigation();
 
-    // Add click handlers to image buttons and cross-references
+    // Add click handlers to image buttons, cross-references, and edit buttons
     setupImageButtonHandlers();
     setupRefLinkHandlers();
+    setupSectionEditHandlers();
 
     // Scroll to specific section if requested
     if (scrollToSection) {
@@ -1007,6 +1012,9 @@ async function displaySingleSection(sectionNum) {
       imageButton = `<button class="section-image-btn" data-image="${imagePath}" title="View scanned page">📄</button>`;
     }
 
+    // Edit button for this section
+    const editButton = `<button class="section-edit-btn" data-section="${sectionNum}" title="Suggest edit">✎</button>`;
+
     // Build topics tags
     let topicsTags = "";
     if (
@@ -1026,6 +1034,7 @@ async function displaySingleSection(sectionNum) {
           <div class="section-anchor">
             <a href="#s-${sectionNum}" class="section-link">${sectionTitle}</a>
             ${imageButton}
+            ${editButton}
           </div>
           ${topicsTags}
         </div>
@@ -1040,9 +1049,10 @@ async function displaySingleSection(sectionNum) {
 
     currentSection = sectionNum;
 
-    // Add click handlers to image buttons and cross-references
+    // Add click handlers to image buttons, cross-references, and edit buttons
     setupImageButtonHandlers();
     setupRefLinkHandlers();
+    setupSectionEditHandlers();
     updateNavigation();
 
     const newUrl = `${window.location.pathname}?section=${sectionNum}`;
@@ -1248,7 +1258,11 @@ function transliteratePreviewContent() {
 const CORRECTIONS_API = "https://dukrnkarane-corrections.udapaana.workers.dev";
 
 async function createGitHubIssue() {
-  const originalMarkdown = cachedContent[currentSection];
+  // Get the section being edited (from attribute or fallback to currentSection)
+  const editingSection =
+    parseInt(editTextarea.getAttribute("data-editing-section")) ||
+    currentSection;
+  const originalMarkdown = cachedContent[editingSection];
   const editedMarkdown = editTextarea.value;
 
   if (originalMarkdown === editedMarkdown) {
@@ -1261,7 +1275,7 @@ async function createGitHubIssue() {
   createIssueBtn.textContent = "Submitting...";
 
   try {
-    const isAppendix = currentSection > CORE_RULES_COUNT;
+    const isAppendix = editingSection > CORE_RULES_COUNT;
 
     const response = await fetch(CORRECTIONS_API, {
       method: "POST",
@@ -1269,7 +1283,7 @@ async function createGitHubIssue() {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        section: currentSection,
+        section: editingSection,
         content: editedMarkdown,
         isAppendix: isAppendix,
       }),
@@ -1523,13 +1537,15 @@ async function loadTOC() {
             <button class="toc-expand-btn" data-chapter-id="${chapterId}" aria-label="Expand chapter">
               <span class="expand-icon">›</span>
             </button>
-            <div class="toc-chapter-info">
-              <div class="toc-chapter-title-row">
-                <span class="toc-chapter-number">Chapter ${chapter.number}</span>
-                <span class="toc-chapter-title">${chapter.title}</span>
+            <a href="#" class="toc-chapter-link" data-chapter="${chapter.number}">
+              <div class="toc-chapter-info">
+                <div class="toc-chapter-title-row">
+                  <span class="toc-chapter-number">Chapter ${chapter.number}</span>
+                  <span class="toc-chapter-title">${chapter.title}</span>
+                </div>
+                <span class="toc-chapter-range">§ ${start}–${end}</span>
               </div>
-              <span class="toc-chapter-range">§ ${start}–${end}</span>
-            </div>
+            </a>
           </div>
 
           <div class="toc-chapter-content" id="${chapterId}" style="display: none;">
@@ -1567,6 +1583,19 @@ async function loadTOC() {
           // Collapse
           btn.classList.remove("expanded");
           contentDiv.style.display = "none";
+        }
+      });
+    });
+
+    // Add click handlers to chapter links (navigate to chapter)
+    tocContent.querySelectorAll(".toc-chapter-link").forEach((link) => {
+      link.addEventListener("click", (e) => {
+        e.preventDefault();
+        const chapterNum = parseInt(link.getAttribute("data-chapter"));
+        const chapter = chaptersData.find((ch) => ch.number === chapterNum);
+        if (chapter) {
+          closeTOC();
+          displayChapter(chapter);
         }
       });
     });
@@ -1837,6 +1866,34 @@ function setupImageButtonHandlers() {
       }
     });
   });
+}
+
+function setupSectionEditHandlers() {
+  // Add click handlers to all section edit buttons
+  document.querySelectorAll(".section-edit-btn").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const sectionNum = parseInt(btn.getAttribute("data-section"));
+      if (sectionNum) {
+        openEditModalForSection(sectionNum);
+      }
+    });
+  });
+}
+
+async function openEditModalForSection(sectionNum) {
+  try {
+    const markdown = await loadSection(sectionNum);
+    editTextarea.value = markdown;
+    // Store which section we're editing
+    editTextarea.setAttribute("data-editing-section", sectionNum);
+    editModal.classList.add("active");
+    previewContainer.style.display = "none";
+    document.body.style.overflow = "hidden";
+  } catch (error) {
+    alert(`Failed to load section ${sectionNum} for editing.`);
+  }
 }
 
 let currentImagePath = null;
