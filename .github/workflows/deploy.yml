@@ -27,7 +27,7 @@ jobs:
       - name: Validate HTML structure
         run: |
           echo "🔍 Validating HTML..."
-          if ! grep -q "<!DOCTYPE html>" index.html; then
+          if ! grep -iq "<!DOCTYPE html>" index.html; then
             echo "❌ Error: Missing DOCTYPE in index.html"
             exit 1
           fi

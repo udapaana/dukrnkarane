@@ -27,6 +27,22 @@ export default {
       });
     }
 
+    // Rate limiting: 1 request per IP per 60 seconds
+    const ip = request.headers.get("CF-Connecting-IP") || "unknown";
+    const rateLimitKey = `https://ratelimit.internal/${ip}`;
+    const cache = caches.default;
+
+    const cached = await cache.match(rateLimitKey);
+    if (cached) {
+      return Response.json(
+        {
+          error:
+            "Too many requests. Please wait a minute before submitting another correction.",
+        },
+        { status: 429, headers: corsHeaders },
+      );
+    }
+
     try {
       const body = await request.json();
       const { section, content, isAppendix } = body;
@@ -56,7 +72,20 @@ export default {
         : `data/rules/${paddedNum}.md`;
 
       // Create the PR
-      const result = await createPullRequest(env, sectionNum, filePath, content);
+      const result = await createPullRequest(
+        env,
+        sectionNum,
+        filePath,
+        content,
+      );
+
+      // Set rate limit cache after successful submission
+      await cache.put(
+        rateLimitKey,
+        new Response("1", {
+          headers: { "Cache-Control": "max-age=60" },
+        }),
+      );
 
       return Response.json(result, { headers: corsHeaders });
     } catch (error) {
@@ -90,7 +119,10 @@ async function createPullRequest(env, section, filePath, newContent) {
   // 1. Get the default branch and its latest commit SHA
   const repoRes = await fetch(api, { headers });
   if (!repoRes.ok) {
-    throw new Error("Failed to fetch repository info");
+    const err = await repoRes.json();
+    throw new Error(
+      `Failed to fetch repository info: ${err.message || repoRes.status}`,
+    );
   }
   const repo = await repoRes.json();
   const defaultBranch = repo.default_branch;
@@ -99,7 +131,10 @@ async function createPullRequest(env, section, filePath, newContent) {
     headers,
   });
   if (!refRes.ok) {
-    throw new Error("Failed to fetch branch reference");
+    const err = await refRes.json();
+    throw new Error(
+      `Failed to fetch branch reference: ${err.message || refRes.status}`,
+    );
   }
   const refData = await refRes.json();
   const baseSha = refData.object.sha;
