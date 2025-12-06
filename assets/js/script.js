@@ -1526,10 +1526,12 @@ async function loadTOC() {
     chaptersData.forEach((chapter) => {
       const [start, end] = chapter.range;
       const isAppendix = chapter.number >= 27;
+      const isPreface = chapter.number === 0;
       const chapterId = `chapter-${chapter.number}`;
+      const showChapterNumber = !isAppendix && !isPreface;
 
       html += `
-        <div class="toc-chapter ${isAppendix ? "toc-appendix" : ""}" data-chapter="${chapter.number}">
+        <div class="toc-chapter ${isAppendix ? "toc-appendix" : ""} ${isPreface ? "toc-preface" : ""}" data-chapter="${chapter.number}">
           <div class="toc-chapter-header">
             <button class="toc-expand-btn" data-chapter-id="${chapterId}" aria-label="Expand chapter">
               <span class="expand-icon">›</span>
@@ -1537,7 +1539,7 @@ async function loadTOC() {
             <a href="#" class="toc-chapter-link" data-chapter="${chapter.number}">
               <div class="toc-chapter-info">
                 <div class="toc-chapter-title-row">
-                  <span class="toc-chapter-number">Chapter ${chapter.number}</span>
+                  ${showChapterNumber ? `<span class="toc-chapter-number">Chapter ${chapter.number}</span>` : ""}
                   <span class="toc-chapter-title">${chapter.title}</span>
                 </div>
                 <span class="toc-chapter-range">§ ${start}–${end}</span>
@@ -2019,6 +2021,48 @@ document.addEventListener("keydown", (e) => {
   }
 });
 
+// Track visible section on scroll
+function setupScrollTracking() {
+  let scrollTimeout;
+
+  window.addEventListener("scroll", () => {
+    // Debounce scroll events
+    clearTimeout(scrollTimeout);
+    scrollTimeout = setTimeout(() => {
+      updateVisibleSection();
+    }, 100);
+  });
+}
+
+function updateVisibleSection() {
+  const sections = document.querySelectorAll(".grammar-section");
+  if (sections.length === 0) return;
+
+  const viewportTop = window.scrollY;
+  const viewportMiddle = viewportTop + window.innerHeight / 3; // Use top third of viewport
+
+  let visibleSection = null;
+
+  for (const section of sections) {
+    const rect = section.getBoundingClientRect();
+    const sectionTop = rect.top + window.scrollY;
+    const sectionBottom = sectionTop + rect.height;
+
+    // Check if section is in the top portion of the viewport
+    if (sectionTop <= viewportMiddle && sectionBottom > viewportTop) {
+      visibleSection = section;
+    }
+  }
+
+  if (visibleSection) {
+    const sectionNum = parseInt(visibleSection.getAttribute("data-section"));
+    if (!isNaN(sectionNum) && sectionNum !== currentSection) {
+      currentSection = sectionNum;
+      updateNavigation();
+    }
+  }
+}
+
 // Initialize everything
 async function main() {
   // Initialize theme/script immediately (no async)
@@ -2031,6 +2075,9 @@ async function main() {
   // Display initial section
   currentSection = getSectionFromUrl();
   await displaySection(currentSection);
+
+  // Setup scroll tracking for section visibility
+  setupScrollTracking();
 
   // Load TOC in background (don't block)
   loadTOC();
