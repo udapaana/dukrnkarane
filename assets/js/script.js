@@ -728,6 +728,9 @@ function parseMarkdown(markdown) {
   html = html.replace(/^\- (.*$)/gim, "<li>$1</li>");
   html = html.replace(/(<li>.*<\/li>)/s, "<ul>$1</ul>");
 
+  // Parse parenthetical lists: (1), (2), (a), (b), etc.
+  html = parseParentheticalLists(html);
+
   const lines = html.split("\n");
   const paragraphs = [];
   let currentParagraph = "";
@@ -766,6 +769,72 @@ function parseMarkdown(markdown) {
   }
 
   return result;
+}
+
+// Parse parenthetical lists: (1), (2), (a), (b), etc.
+function parseParentheticalLists(markdown) {
+  const lines = markdown.split("\n");
+  const result = [];
+  let i = 0;
+
+  while (i < lines.length) {
+    const line = lines[i];
+
+    // Check for numbered parenthetical list: (1), (2), etc.
+    const numMatch = line.match(/^\((\d+)\)\s+(.*)$/);
+    if (numMatch) {
+      const listItems = [];
+      let j = i;
+
+      while (j < lines.length) {
+        const itemMatch = lines[j].match(/^\((\d+)\)\s+(.*)$/);
+        if (itemMatch) {
+          listItems.push(`<li value="${itemMatch[1]}">${itemMatch[2]}</li>`);
+          j++;
+        } else {
+          break;
+        }
+      }
+
+      if (listItems.length > 0) {
+        result.push(`<ol class="paren-list">${listItems.join("\n")}</ol>`);
+        i = j;
+        continue;
+      }
+    }
+
+    // Check for lettered parenthetical list: (a), (b), etc.
+    const letterMatch = line.match(/^\(([a-z])\)\s+(.*)$/i);
+    if (letterMatch) {
+      const listItems = [];
+      let j = i;
+      const isLowerCase = letterMatch[1] === letterMatch[1].toLowerCase();
+
+      while (j < lines.length) {
+        const itemMatch = lines[j].match(/^\(([a-z])\)\s+(.*)$/i);
+        if (itemMatch) {
+          listItems.push(`<li>${itemMatch[2]}</li>`);
+          j++;
+        } else {
+          break;
+        }
+      }
+
+      if (listItems.length > 0) {
+        const listType = isLowerCase ? "lower-alpha" : "upper-alpha";
+        result.push(
+          `<ol class="paren-list" style="list-style-type: ${listType}">${listItems.join("\n")}</ol>`,
+        );
+        i = j;
+        continue;
+      }
+    }
+
+    result.push(line);
+    i++;
+  }
+
+  return result.join("\n");
 }
 
 // Parse markdown tables

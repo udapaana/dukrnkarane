@@ -416,6 +416,23 @@ hr {
   font-weight: 600;
 }
 
+/* Parenthetical lists: (1), (2), (a), (b), etc. */
+.paren-list {
+  list-style-position: outside;
+  padding-left: 1.75rem;
+  margin: var(--space-md) 0;
+}
+
+.paren-list li {
+  margin-bottom: var(--space-sm);
+  padding-left: 0.25rem;
+  line-height: 1.7;
+}
+
+.paren-list li::marker {
+  font-weight: 400;
+}
+
 .footnote-list {
   list-style-position: outside;
   padding-left: 1.25rem;
