@@ -1181,6 +1181,16 @@ function goToNext() {
 
 // Keyboard navigation
 function handleKeyboard(event) {
+  // Don't handle navigation when modals are open or focus is in an input/textarea
+  if (
+    editModal?.classList.contains("active") ||
+    helpModal?.classList.contains("active") ||
+    event.target.tagName === "INPUT" ||
+    event.target.tagName === "TEXTAREA"
+  ) {
+    return;
+  }
+
   if (event.key === "ArrowLeft" && currentSection > MIN_SECTION) {
     goToPrevious();
   } else if (event.key === "ArrowRight" && currentSection < TOTAL_SECTIONS) {
@@ -2104,6 +2114,9 @@ function setupScrollTracking() {
 }
 
 function updateVisibleSection() {
+  // Don't update section tracking while edit modal is open
+  if (editModal?.classList.contains("active")) return;
+
   const sections = document.querySelectorAll(".grammar-section");
   if (sections.length === 0) return;
 
