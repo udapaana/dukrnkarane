@@ -1371,16 +1371,24 @@ async function createGitHubIssue() {
       throw new Error(result.error || "Failed to submit correction");
     }
 
-    // Success - show PR link
-    alert(
-      `✅ Correction submitted!\n\n` +
-        `A pull request has been created:\n` +
-        `PR #${result.prNumber}\n\n` +
-        `Click OK to view the PR.`,
-    );
+    // Success - show PR link in the modal
+    const modalBody = editModal.querySelector(".modal-body");
+    modalBody.innerHTML = `
+      <div class="submission-success">
+        <h3>Correction Submitted</h3>
+        <p>A pull request has been created for your suggested edit.</p>
+        <a href="${result.prUrl}" target="_blank" rel="noopener" class="pr-link">
+          View PR #${result.prNumber}
+        </a>
+        <button id="close-success" class="primary-button">Done</button>
+      </div>
+    `;
 
-    window.open(result.prUrl, "_blank");
-    closeEditModal();
+    document.getElementById("close-success").addEventListener("click", () => {
+      closeEditModal();
+      // Reload the modal content for next use
+      location.reload();
+    });
   } catch (error) {
     console.error("Correction submission failed:", error);
     alert(

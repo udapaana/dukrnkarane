@@ -1412,6 +1412,52 @@ tbody tr:hover {
   background: var(--color-border);
 }
 
+/* Submission Success */
+.submission-success {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: var(--space-xl);
+  gap: var(--space-md);
+}
+
+.submission-success h3 {
+  font-size: 1.5rem;
+  color: #059669;
+  margin: 0;
+}
+
+[data-theme="dark"] .submission-success h3 {
+  color: #34d399;
+}
+
+.submission-success p {
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+.submission-success .pr-link {
+  display: inline-block;
+  padding: var(--space-sm) var(--space-lg);
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-accent);
+  text-decoration: none;
+  font-weight: 500;
+  transition: var(--transition);
+}
+
+.submission-success .pr-link:hover {
+  background: var(--color-border);
+}
+
+.submission-success .primary-button {
+  margin-top: var(--space-md);
+}
+
 /* Image Lightbox */
 .image-lightbox {
   position: fixed;
