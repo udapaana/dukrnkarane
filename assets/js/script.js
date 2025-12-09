@@ -713,6 +713,10 @@ function parseMarkdown(markdown) {
   // Parse tables (before other processing)
   html = parseTables(html);
 
+  // Parse parenthetical lists BEFORE bold processing: (1), (2), (a), (b), etc.
+  // This must happen before ** is converted to <strong> so we can detect **(a)** patterns
+  html = parseParentheticalLists(html);
+
   // Horizontal rules (but not frontmatter)
   html = html.replace(/^---$/gim, "<hr>");
   html = html.replace(/^\*\*\*$/gim, "<hr>");
@@ -727,9 +731,6 @@ function parseMarkdown(markdown) {
   html = html.replace(/^\> (.*$)/gim, "<blockquote>$1</blockquote>");
   html = html.replace(/^\- (.*$)/gim, "<li>$1</li>");
   html = html.replace(/(<li>.*<\/li>)/s, "<ul>$1</ul>");
-
-  // Parse parenthetical lists: (1), (2), (a), (b), etc.
-  html = parseParentheticalLists(html);
 
   const lines = html.split("\n");
   const paragraphs = [];
@@ -771,23 +772,29 @@ function parseMarkdown(markdown) {
   return result;
 }
 
-// Parse parenthetical lists: (1), (2), (a), (b), etc.
+// Parse parenthetical lists: (1), (2), (a), (b), **(a)**, **(1)**, etc.
 function parseParentheticalLists(markdown) {
   const lines = markdown.split("\n");
   const result = [];
   let i = 0;
 
+  // Patterns to match numbered lists: (1), **(1)**, __(1)__, etc.
+  const numPattern = /^(?:\*\*|\*|__|_)?\((\d+)\)(?:\*\*|\*|__|_)?\s+(.*)$/;
+  // Patterns to match lettered lists: (a), **(a)**, __(a)__, etc.
+  const letterPattern =
+    /^(?:\*\*|\*|__|_)?\(([a-z])\)(?:\*\*|\*|__|_)?\s+(.*)$/i;
+
   while (i < lines.length) {
     const line = lines[i];
 
-    // Check for numbered parenthetical list: (1), (2), etc.
-    const numMatch = line.match(/^\((\d+)\)\s+(.*)$/);
+    // Check for numbered parenthetical list: (1), (2), **(1)**, etc.
+    const numMatch = line.match(numPattern);
     if (numMatch) {
       const listItems = [];
       let j = i;
 
       while (j < lines.length) {
-        const itemMatch = lines[j].match(/^\((\d+)\)\s+(.*)$/);
+        const itemMatch = lines[j].match(numPattern);
         if (itemMatch) {
           listItems.push(`<li value="${itemMatch[1]}">${itemMatch[2]}</li>`);
           j++;
@@ -803,15 +810,15 @@ function parseParentheticalLists(markdown) {
       }
     }
 
-    // Check for lettered parenthetical list: (a), (b), etc.
-    const letterMatch = line.match(/^\(([a-z])\)\s+(.*)$/i);
+    // Check for lettered parenthetical list: (a), (b), **(a)**, etc.
+    const letterMatch = line.match(letterPattern);
     if (letterMatch) {
       const listItems = [];
       let j = i;
       const isLowerCase = letterMatch[1] === letterMatch[1].toLowerCase();
 
       while (j < lines.length) {
-        const itemMatch = lines[j].match(/^\(([a-z])\)\s+(.*)$/i);
+        const itemMatch = lines[j].match(letterPattern);
         if (itemMatch) {
           listItems.push(`<li>${itemMatch[2]}</li>`);
           j++;
