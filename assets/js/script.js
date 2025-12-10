@@ -772,73 +772,28 @@ function parseMarkdown(markdown) {
   return result;
 }
 
-// Parse parenthetical lists: (1), (2), (a), (b), **(a)**, **(1)**, etc.
+// Parse parenthetical labels: (1), (2), (a), (b), **(a)**, **(1)**, etc.
+// These are styled as inline labels, not converted to <ol> lists
 function parseParentheticalLists(markdown) {
   const lines = markdown.split("\n");
   const result = [];
-  let i = 0;
 
-  // Patterns to match numbered lists: (1), **(1)**, __(1)__, etc.
-  const numPattern = /^(?:\*\*|\*|__|_)?\((\d+)\)(?:\*\*|\*|__|_)?\s+(.*)$/;
-  // Patterns to match lettered lists: (a), **(a)**, __(a)__, etc.
-  const letterPattern =
-    /^(?:\*\*|\*|__|_)?\(([a-z])\)(?:\*\*|\*|__|_)?\s+(.*)$/i;
+  // Pattern to match line-starting parenthetical markers with optional bold/italic
+  const pattern = /^(?:\*\*|\*|__|_)?\(([a-z]|\d+)\)(?:\*\*|\*|__|_)?\s+(.*)$/i;
 
-  while (i < lines.length) {
-    const line = lines[i];
-
-    // Check for numbered parenthetical list: (1), (2), **(1)**, etc.
-    const numMatch = line.match(numPattern);
-    if (numMatch) {
-      const listItems = [];
-      let j = i;
-
-      while (j < lines.length) {
-        const itemMatch = lines[j].match(numPattern);
-        if (itemMatch) {
-          listItems.push(`<li value="${itemMatch[1]}">${itemMatch[2]}</li>`);
-          j++;
-        } else {
-          break;
-        }
-      }
-
-      if (listItems.length > 0) {
-        result.push(`<ol class="paren-list">${listItems.join("\n")}</ol>`);
-        i = j;
-        continue;
-      }
+  for (const line of lines) {
+    const match = line.match(pattern);
+    if (match) {
+      const marker = match[1];
+      const content = match[2];
+      const isNumber = /^\d+$/.test(marker);
+      const markerClass = isNumber ? "paren-marker-num" : "paren-marker-alpha";
+      result.push(
+        `<div class="paren-item"><span class="${markerClass}">(${marker})</span> ${content}</div>`,
+      );
+    } else {
+      result.push(line);
     }
-
-    // Check for lettered parenthetical list: (a), (b), **(a)**, etc.
-    const letterMatch = line.match(letterPattern);
-    if (letterMatch) {
-      const listItems = [];
-      let j = i;
-      const isLowerCase = letterMatch[1] === letterMatch[1].toLowerCase();
-
-      while (j < lines.length) {
-        const itemMatch = lines[j].match(letterPattern);
-        if (itemMatch) {
-          listItems.push(`<li>${itemMatch[2]}</li>`);
-          j++;
-        } else {
-          break;
-        }
-      }
-
-      if (listItems.length > 0) {
-        const listType = isLowerCase ? "lower-alpha" : "upper-alpha";
-        result.push(
-          `<ol class="paren-list" style="list-style-type: ${listType}">${listItems.join("\n")}</ol>`,
-        );
-        i = j;
-        continue;
-      }
-    }
-
-    result.push(line);
-    i++;
   }
 
   return result.join("\n");
