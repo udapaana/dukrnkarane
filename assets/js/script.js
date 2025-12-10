@@ -889,9 +889,10 @@ function renderSectionHtml(sectionNum, markdown) {
   processedMarkdown = processCrossReferences(processedMarkdown);
   const html = parseMarkdown(processedMarkdown);
 
-  // Build section header with title
+  // Build section header with title (process Sanskrit markers in title)
   const ruleId = metadata.rule_id || `§ ${sectionNum}`;
-  const title = metadata.title || "";
+  const rawTitle = metadata.title || "";
+  const title = rawTitle ? processSanskritMarkers(rawTitle) : "";
   const sectionTitle = title ? `${ruleId}: ${title}` : ruleId;
 
   // Check if image exists for this section
@@ -1048,9 +1049,10 @@ async function displaySingleSection(sectionNum) {
     processedMarkdown = processCrossReferences(processedMarkdown);
     const html = parseMarkdown(processedMarkdown);
 
-    // Build section header with title
+    // Build section header with title (process Sanskrit markers in title)
     const ruleId = metadata.rule_id || `§ ${sectionNum}`;
-    const title = metadata.title || "";
+    const rawTitle = metadata.title || "";
+    const title = rawTitle ? processSanskritMarkers(rawTitle) : "";
     const sectionTitle = title ? `${ruleId}: ${title}` : ruleId;
 
     // Check if image exists for this section
@@ -1703,7 +1705,8 @@ async function loadChapterSections(chapterNum, contentDiv) {
       if (error || !metadata) continue;
 
       const ruleId = metadata.rule_id || `§ ${sectionNum}`;
-      const title = metadata.title || "";
+      const rawTitle = metadata.title || "";
+      const title = rawTitle ? processSanskritMarkers(rawTitle) : "";
 
       sectionsHtml += `
         <a href="#" class="toc-section-link" data-section="${sectionNum}">
