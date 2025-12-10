@@ -1227,6 +1227,8 @@ function transliterateHelpContent() {
 }
 
 // Edit Modal Functions
+let originalEditModalBody = null;
+
 function openEditModal() {
   const markdown = cachedContent[currentSection];
   if (!markdown) {
@@ -1234,16 +1236,32 @@ function openEditModal() {
     return;
   }
 
-  editTextarea.value = markdown;
+  // Store original modal body HTML if not already stored
+  const modalBody = editModal.querySelector(".modal-body");
+  if (!originalEditModalBody) {
+    originalEditModalBody = modalBody.innerHTML;
+  } else {
+    // Restore original content in case it was replaced by success message
+    modalBody.innerHTML = originalEditModalBody;
+  }
+
+  // Re-acquire references after restoring HTML
+  const textarea = document.getElementById("edit-textarea");
+  const preview = document.getElementById("preview-container");
+
+  textarea.value = markdown;
   editModal.classList.add("active");
-  previewContainer.style.display = "none";
+  preview.style.display = "none";
   document.body.style.overflow = "hidden";
 }
 
 function closeEditModal() {
   editModal.classList.remove("active");
   document.body.style.overflow = "auto";
-  previewContainer.style.display = "none";
+  const preview = document.getElementById("preview-container");
+  if (preview) {
+    preview.style.display = "none";
+  }
 }
 
 function previewChanges() {
@@ -1348,8 +1366,6 @@ async function createGitHubIssue() {
 
     document.getElementById("close-success").addEventListener("click", () => {
       closeEditModal();
-      // Reload the modal content for next use
-      location.reload();
     });
   } catch (error) {
     console.error("Correction submission failed:", error);
