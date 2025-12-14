@@ -363,7 +363,6 @@ body {
 [data-script="iast"] .sanskrit-block,
 [data-script="iast"] .sanskrit-verse {
   font-family: var(--font-serif);
-  font-style: italic;
 }
 
 .sanskrit-inline {
