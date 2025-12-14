@@ -954,6 +954,22 @@ tbody tr:hover {
   min-width: 50px;
 }
 
+/* Script characters in toggle button */
+.script-char.nandinagari,
+.script-option.nandinagari {
+  font-family: "Noto Sans Nandinagari", system-ui, sans-serif;
+}
+
+.script-char.devanagari,
+.script-option.devanagari {
+  font-family: "Noto Sans Devanagari", system-ui, sans-serif;
+}
+
+.script-char.telugu,
+.script-option.telugu {
+  font-family: "Noto Sans Telugu", system-ui, sans-serif;
+}
+
 .script-menu {
   position: absolute;
   top: 100%;
