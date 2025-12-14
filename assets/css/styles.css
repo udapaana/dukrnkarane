@@ -339,6 +339,33 @@ body {
   font-weight: 300;
 }
 
+/* Script-specific font families */
+[data-script="devanagari"] .sanskrit-inline,
+[data-script="devanagari"] .sanskrit-block,
+[data-script="devanagari"] .sanskrit-verse {
+  font-family:
+    "Noto Sans Devanagari", "Devanagari Sangam MN", system-ui, sans-serif;
+}
+
+[data-script="telugu"] .sanskrit-inline,
+[data-script="telugu"] .sanskrit-block,
+[data-script="telugu"] .sanskrit-verse {
+  font-family: "Noto Sans Telugu", "Kohinoor Telugu", system-ui, sans-serif;
+}
+
+[data-script="nandinagari"] .sanskrit-inline,
+[data-script="nandinagari"] .sanskrit-block,
+[data-script="nandinagari"] .sanskrit-verse {
+  font-family: "Noto Sans Nandinagari", system-ui, sans-serif;
+}
+
+[data-script="iast"] .sanskrit-inline,
+[data-script="iast"] .sanskrit-block,
+[data-script="iast"] .sanskrit-verse {
+  font-family: var(--font-serif);
+  font-style: italic;
+}
+
 .sanskrit-inline {
   font-size: 1.1em;
   font-weight: 300;
