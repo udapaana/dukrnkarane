@@ -2,7 +2,7 @@
 import init, { WasmShlesha } from "../wasm/shlesha.js";
 
 // Configuration
-const TOTAL_SECTIONS = 986; // 972 core rules + 14 appendix sections
+const TOTAL_SECTIONS = 987; // 972 core rules + 15 appendix sections
 const MIN_SECTION = 0; // Start at section 0 (Preface)
 const CORE_RULES_COUNT = 972; // Number of core rules
 const CONTENT_BASE_URL_RULES = "data/rules";
@@ -156,7 +156,7 @@ function processCrossReferences(text) {
       if (ref.includes(":")) {
         const [prefix, value] = ref.split(":", 2);
         if (prefix === "prosody") {
-          // Prosody appendix: sections 973-986
+          // Prosody appendix: sections 973-987
           const appendixNum = parseInt(value);
           const sectionNum = CORE_RULES_COUNT + appendixNum;
           return `<a href="#" class="ref-link" data-section="${sectionNum}">Prosody § ${value}</a>`;
@@ -458,7 +458,7 @@ async function loadSection(sectionNum) {
     ? CONTENT_BASE_URL_APPENDIX
     : CONTENT_BASE_URL_RULES;
 
-  // For appendix, remap section numbers 973-986 to 001-014
+  // For appendix, remap section numbers 973-987 to 001-015
   const fileNum = isAppendix ? sectionNum - CORE_RULES_COUNT : sectionNum;
   const paddedNum = String(fileNum).padStart(3, "0");
   const url = `${baseUrl}/${paddedNum}.md`;

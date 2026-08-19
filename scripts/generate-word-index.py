@@ -55,11 +55,11 @@ def build_word_index(rules_dir, appendix_dir):
             print(f"Error processing {file_path}: {e}")
             continue
 
-    # Process appendix rules (sections 973-986, files 001-014)
+    # Process appendix rules (sections 973-987, files 001-015)
     if appendix_dir.exists():
         for file_path in sorted(Path(appendix_dir).glob('*.md')):
             file_num = int(file_path.stem)
-            section_num = CORE_RULES_COUNT + file_num  # Map to 973-986
+            section_num = CORE_RULES_COUNT + file_num  # Map to 973-987
 
             try:
                 with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
